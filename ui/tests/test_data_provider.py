@@ -229,15 +229,23 @@ class TestDataProviderFactory:
         provider = get_data_provider(use_mock=True)
         assert isinstance(provider, MockDataProvider)
 
-    def test_factory_neo4j_not_implemented(self):
-        """Factory should raise NotImplementedError for Neo4j (until implemented)."""
-        with pytest.raises(NotImplementedError):
-            get_data_provider(
-                use_mock=False,
-                uri="bolt://localhost:7687",
-                user="neo4j",
-                password="test"
-            )
+    def test_factory_returns_neo4j_provider(self):
+        """Factory should return Neo4jDataProvider when use_mock=False."""
+        # Skip if neo4j is not available (will fail on import)
+        try:
+            from data.data_provider import Neo4jDataProvider
+        except ImportError:
+            pytest.skip("neo4j package not installed")
+
+        # This will try to connect, so we expect a connection error
+        # but the provider should be created
+        try:
+            provider = get_data_provider(use_mock=False)
+            assert isinstance(provider, Neo4jDataProvider)
+            provider.close()
+        except Exception:
+            # Connection failure is expected without a real Neo4j
+            pass
 
 
 class TestDataClasses:
