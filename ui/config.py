@@ -5,30 +5,33 @@ Defines colors, styles, and settings for the graph visualization.
 Each agent has a single base color used for all their claims.
 """
 
-# Agent color schemes — one base color per agent
+# FIXME: Agent colors are hardcoded. Should be fetched from Neo4j or configurable.
+# Agent color schemes — base color per agent, with exclusive/shared variations (TODO)
 AGENT_COLORS = {
     "agent_claude": {
         "name": "Claude",
-        "base": "#FF8C00",  # Dark orange
+        "base": "#FF8C00",      # Dark orange
+        "exclusive": "#FF4500", # Brighter for exclusive claims (TODO)
+        "shared": "#FFB366",    # Lighter for shared claims (TODO)
     },
     "agent_gemini": {
         "name": "Gemini",
-        "base": "#4169E1",  # Royal blue
+        "base": "#4169E1",      # Royal blue
+        "exclusive": "#0000CD", # Darker for exclusive claims (TODO)
+        "shared": "#87CEEB",    # Lighter for shared claims (TODO)
     },
     # Also support without agent_ prefix
     "claude": {
         "name": "Claude",
         "base": "#FF8C00",
-        "direct": "#FF4500",
-        "in_context": "#FF8C00",
-        "dependency": "#FFB366",
+        "exclusive": "#FF4500",
+        "shared": "#FFB366",
     },
     "gemini": {
         "name": "Gemini",
         "base": "#4169E1",
-        "direct": "#0000CD",
-        "in_context": "#4169E1",
-        "dependency": "#87CEEB",
+        "exclusive": "#0000CD",
+        "shared": "#87CEEB",
     },
 }
 
@@ -62,7 +65,7 @@ GRAPH_CONFIG = {
     "directed": True,
     "hierarchical": True,
     "physics": {
-        "enabled": True,
+        "enabled": False,  # Disabled to prevent blinking on refresh
         "hierarchicalRepulsion": {
             "nodeDistance": 150,
         },
@@ -70,7 +73,7 @@ GRAPH_CONFIG = {
 }
 
 # Auto-refresh interval in milliseconds
-REFRESH_INTERVAL_MS = 2000
+REFRESH_INTERVAL_MS = 15000  # 15 seconds
 
 
 def _find_agent_colors(agent_id: str) -> dict:

@@ -68,17 +68,29 @@ def render_demo_controls(provider: DataProvider) -> bool:
     agents = provider.get_agents()
     nodes = provider.get_nodes()
 
+    # Handle empty state
+    if not agents or not nodes:
+        st.sidebar.caption("No agents or nodes available")
+        return False
+
     # Select agent
     agent_names = [a.name for a in agents]
     selected_agent_name = st.sidebar.selectbox("Agent", agent_names)
-    selected_agent = next(a for a in agents if a.name == selected_agent_name)
+    selected_agent = next((a for a in agents if a.name == selected_agent_name), None)
+
+    if not selected_agent:
+        return False
 
     # Select node (filter to directories and files for simplicity)
     node_options = [(n.id, f"{n.name} ({n.type})") for n in nodes]
+    if not node_options:
+        st.sidebar.caption("No nodes available")
+        return False
+
     selected_node_id = st.sidebar.selectbox(
         "Node",
         options=[n[0] for n in node_options],
-        format_func=lambda x: next(n[1] for n in node_options if n[0] == x)
+        format_func=lambda x: next((n[1] for n in node_options if n[0] == x), x)
     )
 
     # Enter claim reason (free-text description of planned work)
@@ -110,13 +122,31 @@ def render_demo_controls(provider: DataProvider) -> bool:
     return modified
 
 
-def render_legend() -> None:
-    """Render the color legend for agent colors."""
-    st.sidebar.header("Legend")
+def render_legend(provider: DataProvider) -> None:
+    """Render the color legend for active agents only."""
+    agents = provider.get_agents()
 
+    if not agents:
+        return  # Don't show legend if no agents
+
+    st.sidebar.header("Legend")
     st.sidebar.markdown("**Agent Colors:**")
-    for agent_id, colors in AGENT_COLORS.items():
+
+    # Show only active agents, not all defined colors
+    seen_names = set()
+    for agent in agents:
+        agent_colors = AGENT_COLORS.get(agent.id, {})
+        if not agent_colors:
+            # Try without agent_ prefix
+            agent_colors = AGENT_COLORS.get(agent.id.replace("agent_", ""), {})
+
+        name = agent_colors.get("name", agent.name)
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+
+        base_color = agent_colors.get("base", "#888888")
         st.sidebar.markdown(
-            f"<span style='color: {colors['base']};'>●</span> {colors['name']}",
+            f"<span style='color: {base_color};'>●</span> {name}",
             unsafe_allow_html=True
         )

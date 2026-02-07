@@ -1,19 +1,19 @@
 # UI - Current State
 
 ## Status
-**Phase**: Neo4j Integration Complete
+**Phase**: Schema Updated
 **Last Updated**: 2026-02-07
 
 ## What Works
 - Graph visualization with `streamlit-agraph`
 - Color coding by agent (orange=Claude, blue=Gemini)
-- Color nuances by claim reason (direct, in_context, dependency)
-- Auto-refresh every 2 seconds
-- Demo controls to simulate agent claims
-- Agent status sidebar panel
+- Single base color per agent (exclusive/shared colors defined but not yet visualized)
+- **Smart refresh** - Polls every 5 seconds but only re-renders when data changes (no blinking)
+- Demo controls to simulate agent claims (free-text reasons)
+- Agent status sidebar panel (only shows active agents in legend)
 - **Neo4j integration** - Toggle between mock and live data
 - **Real-time updates** - Claims from MCP appear automatically
-- **45 tests passing**
+- **39 tests passing**
 
 ## Architecture
 ```
@@ -46,35 +46,30 @@ uv run streamlit run ui/app.py
 uv run pytest ui/tests/ -v
 ```
 
-## Neo4j Integration
-- Reads credentials from `repo-graph/.env` or environment variables
-- Queries: Codebase, Directory, File nodes + CLAIM relationships
-- Refreshes every 2 seconds to pick up MCP changes
-- Falls back to mock data if connection fails
+## Schema Notes
+- **Claim reasons** are free-text descriptions (e.g., "Refactoring error handling")
+- **Claim types** (TODO): Will add `exclusive` vs `shared` visual indicators
+- Agent colors are matched by name (supports "claude", "agent_claude", "claude-session-1", etc.)
 
 ## Test Coverage
 - DataProvider interface contract
 - Claim CRUD operations (add, remove, clear)
-- Claim reason handling (direct, in_context, dependency)
-- Color selection logic and priority
+- Free-text claim reason handling
+- Color selection by agent name
 - Agent color schemes
 - Graph configuration
 - Neo4j provider instantiation
 
 ## Next Steps
+- [ ] Add visual indicator for `exclusive` vs `shared` claims
 - [ ] Add codebase selector dropdown (for multiple codebases)
-- [ ] Add more sophisticated graph layouts
-- [ ] Show claim timestamps
+- [ ] Show agent messages in sidebar
 - [ ] Add conflict detection visualization
 
 ## Notes for Agents
 - Toggle "Use Neo4j" in sidebar to switch data sources
 - Credentials are loaded from `repo-graph/.env`
 - Colors are defined in `config.py` - add new agents there
-- Claim reasons affect color intensity - darker = more direct
-
-
-## Claim reasons
-- direct - Agent is actively editing this file/directory
-- in_context - Agent has this file in memory/context
-- dependency - File is a dependency of something being edited (auto-claimed)
+- Agent matching is fuzzy (handles session suffixes like "claude-session-1")
+- Smart refresh: polls every 5s, computes data fingerprint, uses `st.stop()` if unchanged
+- Legend only shows agents that are currently registered (not all defined colors)

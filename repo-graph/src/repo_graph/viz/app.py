@@ -152,7 +152,7 @@ def _run_app() -> None:
     st.set_page_config(page_title="broCode Viz", layout="wide")
 
     # Auto-refresh every 2 seconds
-    st_autorefresh(interval=2000, key="autorefresh")
+    st_autorefresh(interval=8000, key="autorefresh")
 
     st.title("broCode — Codebase Graph")
 

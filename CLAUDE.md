@@ -12,10 +12,13 @@ When multiple AI agents (Claude, Gemini, etc.) work on the same codebase simulta
 ## Solution
 
 A coordination layer using a Knowledge Graph (Neo4j) and Model Context Protocol (MCP) that allows agents to:
-- **Claim** nodes (files/directories) they're working on
+- **Claim** nodes with two types:
+  - `exclusive` - Files being directly edited (locked from other agents)
+  - `shared` - Affected files that others can edit with restrictions (no schema/interface changes)
 - **Query** what other agents are currently working on
 - **Release** nodes when done, triggering re-indexing
-- **Automatically claim** additional nodes using static analysis to lock the full impact region (including cross-repo dependencies), creating a safety net for files the agent might not know it's affecting
+- **Message** other agents to request work on claimed files
+- **Automatically claim** additional nodes using static analysis to identify the impact region (dependencies become `shared` claims)
 
 ## Architecture
 
@@ -43,11 +46,19 @@ Provides tools for agents to interact with the Knowledge Graph.
 - `send_message` - Send a message to another agent (e.g., request access to a claimed node)
 - `get_messages` - Retrieve and clear incoming messages (inbox model)
 
-**Claim Reasons:**
-Free-text description of what the agent plans to do with the file. Required and cannot be empty. Examples:
+**Claim Types:**
+- `exclusive` - Files the agent is directly editing. Other agents cannot modify these.
+- `shared` - Files affected by the agent's work (dependencies, imports). Other agents CAN edit these but with a warning: **do not change schemas, return types, or interfaces** that could break the exclusive claim holder's code.
+
+**Claim Reason:**
+Free-text description of what the agent plans to do. Required and cannot be empty. Examples:
 - `"Refactoring error handling in login flow"`
 - `"Adding unit tests for new parser"`
-- `"Reviewing module for dependency analysis"`
+
+**Agent Messaging:**
+Agents can communicate via the MCP server:
+- If Agent A needs to modify a file that Agent B has claimed, Agent A can send a message requesting Agent B to complete specific work on that file when done with current tasks.
+- This enables coordination without blocking: Agent A continues other work while waiting.
 
 ### 3. Visualization (Streamlit)
 Demo UI showing real-time agent activity on the codebase graph. Claimed nodes light up with agent-specific colors.

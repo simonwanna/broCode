@@ -52,10 +52,15 @@ class Claim:
 
     claim_reason is a free-text description of what the agent plans to do
     with this file, e.g. "Refactoring error handling" or "Adding unit tests".
+
+    claim_type indicates the lock level:
+    - "exclusive": Agent has locked the file, others cannot edit
+    - "shared": Agent is working on it but others can edit with restrictions
     """
     agent_id: str
     node_id: str
     claim_reason: str  # Free-text description of planned work
+    claim_type: str = "shared"  # "exclusive" or "shared"
     timestamp: Optional[str] = None
 
 

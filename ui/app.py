@@ -86,7 +86,7 @@ def main():
     st.caption("Multi-agent codebase coordination visualization")
 
     # Sidebar components
-    render_legend()
+    render_legend(provider)
     render_agent_status(provider)
 
     st.sidebar.divider()
@@ -137,12 +137,10 @@ def main():
     st.divider()
     if use_neo4j:
         st.caption(
-            "🔄 Live updates every 2 seconds from Neo4j. "
-            "Claims made via MCP will appear automatically."
+            "Live updates from Neo4j. Claims made via MCP will appear automatically."
         )
     else:
         st.caption(
-            "This visualization updates every 2 seconds. "
             "Use the demo controls in the sidebar to simulate agent behavior."
         )
 
