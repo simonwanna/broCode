@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>repo-graph Visualizer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; overflow: hidden; }
+
+  #controls {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    padding: 12px 20px; background: #161b22; border-bottom: 1px solid #30363d;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  #controls h1 { font-size: 16px; font-weight: 600; color: #f0f6fc; }
+
+  .filter-group { display: flex; align-items: center; gap: 6px; }
+  .filter-group label { font-size: 12px; cursor: pointer; padding: 4px 10px; border-radius: 12px; border: 1px solid #30363d; transition: all .15s; user-select: none; }
+  .filter-group input { display: none; }
+  .filter-group input:checked + label { border-color: currentColor; font-weight: 600; }
+
+  .chip-codebase label  { color: #f97583; } .chip-codebase input:checked + label { background: rgba(249,115,131,.15); }
+  .chip-directory label { color: #79c0ff; } .chip-directory input:checked + label { background: rgba(121,192,255,.15); }
+  .chip-file label      { color: #7ee787; } .chip-file input:checked + label { background: rgba(126,231,135,.15); }
+  .chip-class label     { color: #d2a8ff; } .chip-class input:checked + label { background: rgba(210,168,255,.15); }
+  .chip-function label  { color: #ffa657; } .chip-function input:checked + label { background: rgba(255,166,87,.15); }
+
+  .rel-group { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+  .rel-group label { font-size: 11px; cursor: pointer; padding: 3px 8px; border-radius: 10px; border: 1px solid #30363d; color: #8b949e; transition: all .15s; user-select: none; }
+  .rel-group input { display: none; }
+  .rel-group input:checked + label { color: #c9d1d9; border-color: #58a6ff; background: rgba(88,166,255,.1); }
+
+  #info {
+    position: fixed; bottom: 20px; left: 20px; z-index: 10;
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 12px 16px; font-size: 12px; min-width: 240px; max-width: 360px;
+    display: none;
+  }
+  #info h3 { font-size: 14px; margin-bottom: 6px; }
+  #info .prop { color: #8b949e; margin: 2px 0; }
+  #info .prop span { color: #c9d1d9; }
+
+  #stats {
+    position: fixed; bottom: 20px; right: 20px; z-index: 10;
+    font-size: 11px; color: #484f58;
+  }
+
+  svg { position: fixed; top: 56px; left: 0; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <h1>repo-graph</h1>
+  <div class="filter-group chip-codebase"><input type="checkbox" id="f-Codebase" checked><label for="f-Codebase">Codebase</label></div>
+  <div class="filter-group chip-directory"><input type="checkbox" id="f-Directory" checked><label for="f-Directory">Directory</label></div>
+  <div class="filter-group chip-file"><input type="checkbox" id="f-File" checked><label for="f-File">File</label></div>
+  <div class="filter-group chip-class"><input type="checkbox" id="f-Class" checked><label for="f-Class">Class</label></div>
+  <div class="filter-group chip-function"><input type="checkbox" id="f-Function" checked><label for="f-Function">Function</label></div>
+
+  <span style="color:#30363d">|</span>
+
+  <div class="rel-group"><input type="checkbox" id="r-CONTAINS_DIR" checked><label for="r-CONTAINS_DIR">CONTAINS_DIR</label></div>
+  <div class="rel-group"><input type="checkbox" id="r-CONTAINS_FILE" checked><label for="r-CONTAINS_FILE">CONTAINS_FILE</label></div>
+  <div class="rel-group"><input type="checkbox" id="r-DEFINES_FUNCTION" checked><label for="r-DEFINES_FUNCTION">DEFINES_FUNCTION</label></div>
+  <div class="rel-group"><input type="checkbox" id="r-DEFINES_CLASS" checked><label for="r-DEFINES_CLASS">DEFINES_CLASS</label></div>
+  <div class="rel-group"><input type="checkbox" id="r-HAS_METHOD" checked><label for="r-HAS_METHOD">HAS_METHOD</label></div>
+  <div class="rel-group"><input type="checkbox" id="r-CALLS" checked><label for="r-CALLS">CALLS</label></div>
+</div>
+
+<div id="info">
+  <h3 id="info-title"></h3>
+  <div id="info-props"></div>
+</div>
+
+<div id="stats"></div>
+
+<svg id="graph"></svg>
+
+<script>
+const COLORS = {
+  Codebase:  '#f97583',
+  Directory: '#79c0ff',
+  File:      '#7ee787',
+  Class:     '#d2a8ff',
+  Function:  '#ffa657',
+};
+const RADIUS = { Codebase: 14, Directory: 10, File: 8, Class: 10, Function: 6 };
+const EDGE_COLORS = {
+  CONTAINS_DIR: '#30363d',
+  CONTAINS_FILE: '#30363d',
+  DEFINES_FUNCTION: 'rgba(255,166,87,.3)',
+  DEFINES_CLASS: 'rgba(210,168,255,.3)',
+  HAS_METHOD: 'rgba(210,168,255,.2)',
+  CALLS: 'rgba(249,115,131,.5)',
+};
+
+// Tree edge types — these define parent→child in the hierarchy
+const TREE_EDGES = new Set(['CONTAINS_DIR', 'CONTAINS_FILE', 'DEFINES_FUNCTION', 'DEFINES_CLASS', 'HAS_METHOD']);
+
+let graphData = null;
+let transform = { x: 0, y: 0, k: 1 };
+let hoveredNode = null;
+let selectedNode = null;
+
+// Layout constants
+const LEVEL_HEIGHT = 80;
+const NODE_SPACING = 32;
+
+fetch('graph_data.json')
+  .then(r => r.json())
+  .then(data => { graphData = data; init(); });
+
+function init() {
+  const svg = document.getElementById('graph');
+  const W = window.innerWidth;
+  const H = window.innerHeight - 56;
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.style.top = '56px';
+
+  // Build adjacency: parent → children (from tree edges only)
+  const children = {};   // parentId → [childId, ...]
+  const hasParent = {};  // childId → true
+
+  for (const e of graphData.edges) {
+    if (!TREE_EDGES.has(e.type)) continue;
+    if (!children[e.source]) children[e.source] = [];
+    children[e.source].push(e.target);
+    hasParent[e.target] = true;
+  }
+
+  // Find roots (nodes with no parent in tree edges)
+  const roots = [];
+  for (const n of graphData.nodes) {
+    if (!hasParent[n.id]) roots.push(n.id);
+  }
+
+  // Sort children at each level by label priority then name
+  const labelOrder = { Directory: 0, File: 1, Class: 2, Function: 3 };
+  for (const pid in children) {
+    children[pid].sort((a, b) => {
+      const na = graphData.nodes[a], nb = graphData.nodes[b];
+      const la = labelOrder[na.label] ?? 99, lb = labelOrder[nb.label] ?? 99;
+      if (la !== lb) return la - lb;
+      return (na.name || '').localeCompare(nb.name || '');
+    });
+  }
+
+  // Compute subtree leaf counts for width allocation
+  const leafCount = {};
+  function countLeaves(id) {
+    if (leafCount[id] !== undefined) return leafCount[id];
+    const ch = children[id];
+    if (!ch || ch.length === 0) {
+      leafCount[id] = 1;
+      return 1;
+    }
+    let sum = 0;
+    for (const c of ch) sum += countLeaves(c);
+    leafCount[id] = sum;
+    return sum;
+  }
+  for (const r of roots) countLeaves(r);
+  // Count orphans too
+  for (const n of graphData.nodes) {
+    if (leafCount[n.id] === undefined) leafCount[n.id] = 1;
+  }
+
+  // Assign positions: each node gets x,y based on tree layout
+  const positions = {}; // id → {x, y}
+
+  function layoutSubtree(id, x, y, width) {
+    positions[id] = { x: x + width / 2, y };
+    const ch = children[id];
+    if (!ch || ch.length === 0) return;
+
+    const totalLeaves = leafCount[id];
+    let curX = x;
+    for (const c of ch) {
+      const childWidth = (leafCount[c] / totalLeaves) * width;
+      layoutSubtree(c, curX, y + LEVEL_HEIGHT, childWidth);
+      curX += childWidth;
+    }
+  }
+
+  // Layout each root tree side by side
+  let totalLeaves = 0;
+  for (const r of roots) totalLeaves += leafCount[r];
+  // Also account for truly orphan nodes (no parent AND no children AND not a root with children)
+  const totalWidth = Math.max(totalLeaves * NODE_SPACING, W);
+
+  let curX = 0;
+  for (const r of roots) {
+    const w = (leafCount[r] / totalLeaves) * totalWidth;
+    layoutSubtree(r, curX, 0, w);
+    curX += w;
+  }
+
+  // Assign positions to nodes
+  for (const n of graphData.nodes) {
+    const pos = positions[n.id];
+    if (pos) {
+      n.x = pos.x;
+      n.y = pos.y;
+    } else {
+      // Orphan — place below
+      n.x = Math.random() * totalWidth;
+      n.y = 600;
+    }
+  }
+
+  // Center the view on the tree
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const n of graphData.nodes) {
+    if (n.x < minX) minX = n.x;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.y > maxY) maxY = n.y;
+  }
+  const treeW = maxX - minX;
+  const treeH = maxY - minY;
+  const padding = 60;
+  const scaleX = (W - padding * 2) / (treeW || 1);
+  const scaleY = (H - padding * 2) / (treeH || 1);
+  const scale = Math.min(scaleX, scaleY, 1.5);
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  transform = {
+    x: W / 2 - centerX * scale,
+    y: H / 2 - centerY * scale,
+    k: scale,
+  };
+
+  render();
+  setupInteraction(svg);
+  setupFilters();
+}
+
+function getVisibleLabels() {
+  const s = new Set();
+  for (const l of ['Codebase', 'Directory', 'File', 'Class', 'Function']) {
+    if (document.getElementById('f-' + l).checked) s.add(l);
+  }
+  return s;
+}
+
+function getVisibleRels() {
+  const s = new Set();
+  for (const r of ['CONTAINS_DIR', 'CONTAINS_FILE', 'DEFINES_FUNCTION', 'DEFINES_CLASS', 'HAS_METHOD', 'CALLS']) {
+    if (document.getElementById('r-' + r).checked) s.add(r);
+  }
+  return s;
+}
+
+function render() {
+  const svg = document.getElementById('graph');
+  const nodes = graphData.nodes;
+  const edges = graphData.edges;
+  const visLabels = getVisibleLabels();
+  const visRels = getVisibleRels();
+  const visNodes = new Set();
+  nodes.forEach((n, i) => { if (visLabels.has(n.label)) visNodes.add(i); });
+
+  let html = `<g transform="translate(${transform.x},${transform.y}) scale(${transform.k})">`;
+
+  // Draw tree edges as straight lines
+  for (const e of edges) {
+    if (!visNodes.has(e.source) || !visNodes.has(e.target)) continue;
+    if (!visRels.has(e.type)) continue;
+    if (TREE_EDGES.has(e.type)) {
+      const s = nodes[e.source], t = nodes[e.target];
+      const color = EDGE_COLORS[e.type] || '#30363d';
+      html += `<line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="${color}" stroke-width="0.8"/>`;
+    }
+  }
+
+  // Draw CALLS edges as curved arcs
+  for (const e of edges) {
+    if (!visNodes.has(e.source) || !visNodes.has(e.target)) continue;
+    if (!visRels.has(e.type)) continue;
+    if (!TREE_EDGES.has(e.type)) {
+      const s = nodes[e.source], t = nodes[e.target];
+      const color = EDGE_COLORS[e.type] || 'rgba(249,115,131,.5)';
+      // Curved arc for cross-links
+      const dx = t.x - s.x, dy = t.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const bend = dist * 0.3;
+      const mx = (s.x + t.x) / 2;
+      const my = (s.y + t.y) / 2 - bend;
+      html += `<path d="M${s.x},${s.y} Q${mx},${my} ${t.x},${t.y}" fill="none" stroke="${color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+      // Arrowhead
+      const angle = Math.atan2(t.y - my, t.x - mx);
+      const ar = 6;
+      const ax1 = t.x - ar * Math.cos(angle - 0.3);
+      const ay1 = t.y - ar * Math.sin(angle - 0.3);
+      const ax2 = t.x - ar * Math.cos(angle + 0.3);
+      const ay2 = t.y - ar * Math.sin(angle + 0.3);
+      html += `<polygon points="${t.x},${t.y} ${ax1},${ay1} ${ax2},${ay2}" fill="${color}" opacity="0.6"/>`;
+    }
+  }
+
+  // Nodes
+  for (let i = 0; i < nodes.length; i++) {
+    if (!visNodes.has(i)) continue;
+    const n = nodes[i];
+    const r = RADIUS[n.label] || 6;
+    const color = COLORS[n.label] || '#8b949e';
+    const isHovered = hoveredNode === i;
+    const isSelected = selectedNode === i;
+    const opacity = (hoveredNode !== null && !isHovered) ? 0.3 : 1;
+    const strokeW = isSelected ? 2.5 : isHovered ? 2 : 0;
+    const stroke = isSelected || isHovered ? '#f0f6fc' : 'none';
+
+    html += `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${color}" opacity="${opacity}" stroke="${stroke}" stroke-width="${strokeW}" data-idx="${i}"/>`;
+
+    // Show label for non-function nodes, or hovered/selected functions
+    if (n.label !== 'Function' || isHovered || isSelected) {
+      const fontSize = n.label === 'Function' ? 8 : 10;
+      html += `<text x="${n.x}" y="${n.y + r + fontSize + 2}" text-anchor="middle" fill="${color}" opacity="${opacity}" font-size="${fontSize}" font-family="-apple-system,sans-serif">${n.name || ''}</text>`;
+    }
+  }
+
+  html += '</g>';
+  svg.innerHTML = html;
+
+  // Stats
+  document.getElementById('stats').textContent =
+    `${visNodes.size} nodes | ${edges.filter(e => visNodes.has(e.source) && visNodes.has(e.target) && visRels.has(e.type)).length} edges`;
+}
+
+function setupInteraction(svg) {
+  const nodes = graphData.nodes;
+  let isPanning = false;
+  let panStart = { x: 0, y: 0 };
+
+  function screenToWorld(sx, sy) {
+    return {
+      x: (sx - transform.x) / transform.k,
+      y: (sy - 56 - transform.y) / transform.k,
+    };
+  }
+
+  function findNode(sx, sy) {
+    const w = screenToWorld(sx, sy);
+    const visLabels = getVisibleLabels();
+    let closest = null, closestD = Infinity;
+    for (let i = 0; i < nodes.length; i++) {
+      if (!visLabels.has(nodes[i].label)) continue;
+      const dx = nodes[i].x - w.x, dy = nodes[i].y - w.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const r = (RADIUS[nodes[i].label] || 6) + 4;
+      if (d < r && d < closestD) { closest = i; closestD = d; }
+    }
+    return closest;
+  }
+
+  svg.addEventListener('mousedown', (e) => {
+    const idx = findNode(e.clientX, e.clientY);
+    if (idx !== null) {
+      selectedNode = idx;
+      showInfo(nodes[idx]);
+      render();
+    } else {
+      isPanning = true;
+      panStart = { x: e.clientX - transform.x, y: e.clientY - 56 - transform.y };
+      selectedNode = null;
+      document.getElementById('info').style.display = 'none';
+    }
+  });
+
+  svg.addEventListener('mousemove', (e) => {
+    if (isPanning) {
+      transform.x = e.clientX - panStart.x;
+      transform.y = e.clientY - 56 - panStart.y;
+      render();
+    } else {
+      const idx = findNode(e.clientX, e.clientY);
+      if (idx !== hoveredNode) {
+        hoveredNode = idx;
+        svg.style.cursor = idx !== null ? 'pointer' : 'grab';
+        render();
+      }
+    }
+  });
+
+  svg.addEventListener('mouseup', () => {
+    isPanning = false;
+  });
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const scale = e.deltaY > 0 ? 0.9 : 1.1;
+    const mx = e.clientX, my = e.clientY - 56;
+    transform.x = mx - (mx - transform.x) * scale;
+    transform.y = my - (my - transform.y) * scale;
+    transform.k *= scale;
+    render();
+  }, { passive: false });
+
+  window.addEventListener('resize', () => {
+    svg.setAttribute('width', window.innerWidth);
+    svg.setAttribute('height', window.innerHeight - 56);
+    render();
+  });
+}
+
+function showInfo(node) {
+  const el = document.getElementById('info');
+  const title = document.getElementById('info-title');
+  const props = document.getElementById('info-props');
+
+  title.textContent = `${node.label}: ${node.name}`;
+  title.style.color = COLORS[node.label];
+
+  const skip = new Set(['id', 'label', 'name', 'x', 'y']);
+  let html = '';
+  for (const [k, v] of Object.entries(node)) {
+    if (skip.has(k)) continue;
+    const val = Array.isArray(v) ? v.join(', ') || '(none)' : v;
+    html += `<div class="prop">${k}: <span>${val}</span></div>`;
+  }
+  props.innerHTML = html;
+  el.style.display = 'block';
+}
+
+function setupFilters() {
+  document.querySelectorAll('#controls input').forEach(cb => {
+    cb.addEventListener('change', render);
+  });
+}
+</script>
+</body>
+</html>

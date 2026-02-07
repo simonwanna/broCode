@@ -1,0 +1,1474 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "label": "Class",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 14,
+      "codebase": "repo-graph",
+      "name": "AstAnalysisResult",
+      "base_classes": []
+    },
+    {
+      "id": 1,
+      "label": "Class",
+      "file_path": "src/repo_graph/models/ast_nodes.py",
+      "line_number": 39,
+      "codebase": "repo-graph",
+      "name": "Class",
+      "base_classes": []
+    },
+    {
+      "id": 2,
+      "label": "Class",
+      "file_path": "src/repo_graph/models/nodes.py",
+      "line_number": 8,
+      "codebase": "repo-graph",
+      "name": "Codebase",
+      "base_classes": []
+    },
+    {
+      "id": 3,
+      "label": "Class",
+      "file_path": "src/repo_graph/models/nodes.py",
+      "line_number": 22,
+      "codebase": "repo-graph",
+      "name": "Directory",
+      "base_classes": []
+    },
+    {
+      "id": 4,
+      "label": "Class",
+      "file_path": "src/repo_graph/indexer/filesystem.py",
+      "line_number": 52,
+      "codebase": "repo-graph",
+      "name": "Edge",
+      "base_classes": []
+    },
+    {
+      "id": 5,
+      "label": "Class",
+      "file_path": "src/repo_graph/models/nodes.py",
+      "line_number": 42,
+      "codebase": "repo-graph",
+      "name": "File",
+      "base_classes": []
+    },
+    {
+      "id": 6,
+      "label": "Class",
+      "file_path": "src/repo_graph/models/ast_nodes.py",
+      "line_number": 7,
+      "codebase": "repo-graph",
+      "name": "Function",
+      "base_classes": []
+    },
+    {
+      "id": 7,
+      "label": "Class",
+      "file_path": "src/repo_graph/indexer/filesystem.py",
+      "line_number": 63,
+      "codebase": "repo-graph",
+      "name": "IndexResult",
+      "base_classes": []
+    },
+    {
+      "id": 8,
+      "label": "Class",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 8,
+      "codebase": "repo-graph",
+      "name": "Neo4jStore",
+      "base_classes": []
+    },
+    {
+      "id": 9,
+      "label": "Class",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 26,
+      "codebase": "repo-graph",
+      "name": "_AstVisitor",
+      "base_classes": [
+        "ast.NodeVisitor"
+      ]
+    },
+    {
+      "id": 10,
+      "label": "Codebase",
+      "root_path": "/Users/tomboustedt/Desktop/repo-graph",
+      "name": "repo-graph"
+    },
+    {
+      "id": 11,
+      "label": "Directory",
+      "path": "src/repo_graph/indexer",
+      "depth": 3,
+      "codebase": "repo-graph",
+      "name": "indexer"
+    },
+    {
+      "id": 12,
+      "label": "Directory",
+      "path": "src/repo_graph/models",
+      "depth": 3,
+      "codebase": "repo-graph",
+      "name": "models"
+    },
+    {
+      "id": 13,
+      "label": "Directory",
+      "path": "src/repo_graph",
+      "depth": 2,
+      "codebase": "repo-graph",
+      "name": "repo_graph"
+    },
+    {
+      "id": 14,
+      "label": "Directory",
+      "path": "src",
+      "depth": 1,
+      "codebase": "repo-graph",
+      "name": "src"
+    },
+    {
+      "id": 15,
+      "label": "Directory",
+      "path": "src/repo_graph/storage",
+      "depth": 3,
+      "codebase": "repo-graph",
+      "name": "storage"
+    },
+    {
+      "id": 16,
+      "label": "Directory",
+      "path": "tests",
+      "depth": 1,
+      "codebase": "repo-graph",
+      "name": "tests"
+    },
+    {
+      "id": 17,
+      "label": "File",
+      "path": ".gitignore",
+      "extension": "",
+      "size_bytes": 56,
+      "codebase": "repo-graph",
+      "name": ".gitignore"
+    },
+    {
+      "id": 18,
+      "label": "File",
+      "path": ".indexignore",
+      "extension": "",
+      "size_bytes": 235,
+      "codebase": "repo-graph",
+      "name": ".indexignore"
+    },
+    {
+      "id": 19,
+      "label": "File",
+      "path": "src/repo_graph/__init__.py",
+      "extension": ".py",
+      "size_bytes": 0,
+      "codebase": "repo-graph",
+      "name": "__init__.py"
+    },
+    {
+      "id": 20,
+      "label": "File",
+      "path": "src/repo_graph/indexer/__init__.py",
+      "extension": ".py",
+      "size_bytes": 0,
+      "codebase": "repo-graph",
+      "name": "__init__.py"
+    },
+    {
+      "id": 21,
+      "label": "File",
+      "path": "src/repo_graph/models/__init__.py",
+      "extension": ".py",
+      "size_bytes": 184,
+      "codebase": "repo-graph",
+      "name": "__init__.py"
+    },
+    {
+      "id": 22,
+      "label": "File",
+      "path": "src/repo_graph/storage/__init__.py",
+      "extension": ".py",
+      "size_bytes": 0,
+      "codebase": "repo-graph",
+      "name": "__init__.py"
+    },
+    {
+      "id": 23,
+      "label": "File",
+      "path": "tests/__init__.py",
+      "extension": ".py",
+      "size_bytes": 0,
+      "codebase": "repo-graph",
+      "name": "__init__.py"
+    },
+    {
+      "id": 24,
+      "label": "File",
+      "path": "src/repo_graph/__main__.py",
+      "extension": ".py",
+      "size_bytes": 40,
+      "codebase": "repo-graph",
+      "name": "__main__.py"
+    },
+    {
+      "id": 25,
+      "label": "File",
+      "path": "src/repo_graph/indexer/ast_analyzer.py",
+      "extension": ".py",
+      "size_bytes": 7307,
+      "codebase": "repo-graph",
+      "name": "ast_analyzer.py"
+    },
+    {
+      "id": 26,
+      "label": "File",
+      "path": "src/repo_graph/models/ast_nodes.py",
+      "extension": ".py",
+      "size_bytes": 1467,
+      "codebase": "repo-graph",
+      "name": "ast_nodes.py"
+    },
+    {
+      "id": 27,
+      "label": "File",
+      "path": "src/repo_graph/cli.py",
+      "extension": ".py",
+      "size_bytes": 2889,
+      "codebase": "repo-graph",
+      "name": "cli.py"
+    },
+    {
+      "id": 28,
+      "label": "File",
+      "path": "src/repo_graph/indexer/filesystem.py",
+      "extension": ".py",
+      "size_bytes": 4685,
+      "codebase": "repo-graph",
+      "name": "filesystem.py"
+    },
+    {
+      "id": 29,
+      "label": "File",
+      "path": "src/repo_graph/storage/neo4j_store.py",
+      "extension": ".py",
+      "size_bytes": 8047,
+      "codebase": "repo-graph",
+      "name": "neo4j_store.py"
+    },
+    {
+      "id": 30,
+      "label": "File",
+      "path": "src/repo_graph/models/nodes.py",
+      "extension": ".py",
+      "size_bytes": 1275,
+      "codebase": "repo-graph",
+      "name": "nodes.py"
+    },
+    {
+      "id": 31,
+      "label": "File",
+      "path": "pyproject.toml",
+      "extension": ".toml",
+      "size_bytes": 427,
+      "codebase": "repo-graph",
+      "name": "pyproject.toml"
+    },
+    {
+      "id": 32,
+      "label": "File",
+      "path": "tests/test_ast_analyzer.py",
+      "extension": ".py",
+      "size_bytes": 6342,
+      "codebase": "repo-graph",
+      "name": "test_ast_analyzer.py"
+    },
+    {
+      "id": 33,
+      "label": "File",
+      "path": "tests/test_indexer.py",
+      "extension": ".py",
+      "size_bytes": 4992,
+      "codebase": "repo-graph",
+      "name": "test_indexer.py"
+    },
+    {
+      "id": 34,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 18,
+      "codebase": "repo-graph",
+      "name": "__enter__",
+      "is_method": true,
+      "parameters": [
+        "self"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 35,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 21,
+      "codebase": "repo-graph",
+      "name": "__exit__",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "exc"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 36,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 30,
+      "codebase": "repo-graph",
+      "name": "__init__",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "rel_path"
+      ],
+      "owner_class": "_AstVisitor"
+    },
+    {
+      "id": 37,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 11,
+      "codebase": "repo-graph",
+      "name": "__init__",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "uri",
+        "user",
+        "password",
+        "database"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 38,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 48,
+      "codebase": "repo-graph",
+      "name": "_create_graph",
+      "is_method": true,
+      "parameters": [
+        "tx",
+        "result"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 39,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/filesystem.py",
+      "line_number": 27,
+      "codebase": "repo-graph",
+      "name": "_is_ignored",
+      "is_method": false,
+      "parameters": [
+        "rel_path",
+        "patterns"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 40,
+      "label": "Function",
+      "file_path": "src/repo_graph/cli.py",
+      "line_number": 12,
+      "codebase": "repo-graph",
+      "name": "_load_dotenv",
+      "is_method": false,
+      "parameters": [],
+      "owner_class": ""
+    },
+    {
+      "id": 41,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 8,
+      "codebase": "repo-graph",
+      "name": "_make_file",
+      "is_method": false,
+      "parameters": [
+        "tmp_path",
+        "rel",
+        "content"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 42,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/filesystem.py",
+      "line_number": 13,
+      "codebase": "repo-graph",
+      "name": "_parse_indexignore",
+      "is_method": false,
+      "parameters": [
+        "root"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 43,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 127,
+      "codebase": "repo-graph",
+      "name": "_parse_single_file",
+      "is_method": false,
+      "parameters": [
+        "abs_path",
+        "rel_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 44,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 117,
+      "codebase": "repo-graph",
+      "name": "_resolve_call_name",
+      "is_method": false,
+      "parameters": [
+        "node"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 45,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 66,
+      "codebase": "repo-graph",
+      "name": "_visit_function",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "node"
+      ],
+      "owner_class": "_AstVisitor"
+    },
+    {
+      "id": 46,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 144,
+      "codebase": "repo-graph",
+      "name": "analyze_python_files",
+      "is_method": false,
+      "parameters": [
+        "files",
+        "root"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 47,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 33,
+      "codebase": "repo-graph",
+      "name": "clear",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "codebase_name"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 48,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 15,
+      "codebase": "repo-graph",
+      "name": "close",
+      "is_method": true,
+      "parameters": [
+        "self"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 49,
+      "label": "Function",
+      "file_path": "src/repo_graph/models/ast_nodes.py",
+      "line_number": 20,
+      "codebase": "repo-graph",
+      "name": "from_ast",
+      "is_method": true,
+      "parameters": [
+        "name",
+        "file_path",
+        "line_number",
+        "is_method",
+        "parameters",
+        "owner_class"
+      ],
+      "owner_class": "Function"
+    },
+    {
+      "id": 50,
+      "label": "Function",
+      "file_path": "src/repo_graph/models/ast_nodes.py",
+      "line_number": 50,
+      "codebase": "repo-graph",
+      "name": "from_ast",
+      "is_method": true,
+      "parameters": [
+        "name",
+        "file_path",
+        "line_number",
+        "base_classes"
+      ],
+      "owner_class": "Class"
+    },
+    {
+      "id": 51,
+      "label": "Function",
+      "file_path": "src/repo_graph/models/nodes.py",
+      "line_number": 17,
+      "codebase": "repo-graph",
+      "name": "from_path",
+      "is_method": true,
+      "parameters": [
+        "path"
+      ],
+      "owner_class": "Codebase"
+    },
+    {
+      "id": 52,
+      "label": "Function",
+      "file_path": "src/repo_graph/models/nodes.py",
+      "line_number": 32,
+      "codebase": "repo-graph",
+      "name": "from_path",
+      "is_method": true,
+      "parameters": [
+        "path",
+        "root"
+      ],
+      "owner_class": "Directory"
+    },
+    {
+      "id": 53,
+      "label": "Function",
+      "file_path": "src/repo_graph/models/nodes.py",
+      "line_number": 53,
+      "codebase": "repo-graph",
+      "name": "from_path",
+      "is_method": true,
+      "parameters": [
+        "path",
+        "root"
+      ],
+      "owner_class": "File"
+    },
+    {
+      "id": 54,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/filesystem.py",
+      "line_number": 76,
+      "codebase": "repo-graph",
+      "name": "index_repository",
+      "is_method": false,
+      "parameters": [
+        "root",
+        "ignore",
+        "analyze_python"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 55,
+      "label": "Function",
+      "file_path": "src/repo_graph/cli.py",
+      "line_number": 27,
+      "codebase": "repo-graph",
+      "name": "main",
+      "is_method": false,
+      "parameters": [
+        "argv"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 56,
+      "label": "Function",
+      "file_path": "src/repo_graph/storage/neo4j_store.py",
+      "line_number": 28,
+      "codebase": "repo-graph",
+      "name": "save",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "result"
+      ],
+      "owner_class": "Neo4jStore"
+    },
+    {
+      "id": 57,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 115,
+      "codebase": "repo-graph",
+      "name": "test_defines_class_edges",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 58,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 104,
+      "codebase": "repo-graph",
+      "name": "test_defines_function_edges",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 59,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 166,
+      "codebase": "repo-graph",
+      "name": "test_empty_python_file",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 60,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 35,
+      "codebase": "repo-graph",
+      "name": "test_extract_async_function",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 61,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 92,
+      "codebase": "repo-graph",
+      "name": "test_extract_base_classes",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 62,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 61,
+      "codebase": "repo-graph",
+      "name": "test_extract_class_with_methods",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 63,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 19,
+      "codebase": "repo-graph",
+      "name": "test_extract_top_level_functions",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 64,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 52,
+      "codebase": "repo-graph",
+      "name": "test_file_node_attributes",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 65,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 141,
+      "codebase": "repo-graph",
+      "name": "test_function_calls_same_file",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 66,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 126,
+      "codebase": "repo-graph",
+      "name": "test_has_method_edges",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 67,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 37,
+      "codebase": "repo-graph",
+      "name": "test_ignores_git_and_pycache",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 68,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 7,
+      "codebase": "repo-graph",
+      "name": "test_index_simple_tree",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 69,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 178,
+      "codebase": "repo-graph",
+      "name": "test_index_with_python_analysis",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 70,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 191,
+      "codebase": "repo-graph",
+      "name": "test_index_without_python_analysis",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 71,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 132,
+      "codebase": "repo-graph",
+      "name": "test_indexignore_comments_and_blanks",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 72,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 105,
+      "codebase": "repo-graph",
+      "name": "test_indexignore_directory_pattern",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 73,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 118,
+      "codebase": "repo-graph",
+      "name": "test_indexignore_doublestar_prefix",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 74,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 80,
+      "codebase": "repo-graph",
+      "name": "test_indexignore_exact_filename",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 75,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 91,
+      "codebase": "repo-graph",
+      "name": "test_indexignore_glob_extension",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 76,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 65,
+      "codebase": "repo-graph",
+      "name": "test_nested_directories",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 77,
+      "label": "Function",
+      "file_path": "tests/test_indexer.py",
+      "line_number": 143,
+      "codebase": "repo-graph",
+      "name": "test_no_indexignore_file",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 78,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 45,
+      "codebase": "repo-graph",
+      "name": "test_parameters_extraction",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 79,
+      "label": "Function",
+      "file_path": "tests/test_ast_analyzer.py",
+      "line_number": 156,
+      "codebase": "repo-graph",
+      "name": "test_syntax_error_file_is_skipped",
+      "is_method": false,
+      "parameters": [
+        "tmp_path"
+      ],
+      "owner_class": ""
+    },
+    {
+      "id": 80,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 99,
+      "codebase": "repo-graph",
+      "name": "visit_AsyncFunctionDef",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "node"
+      ],
+      "owner_class": "_AstVisitor"
+    },
+    {
+      "id": 81,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 104,
+      "codebase": "repo-graph",
+      "name": "visit_Call",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "node"
+      ],
+      "owner_class": "_AstVisitor"
+    },
+    {
+      "id": 82,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 45,
+      "codebase": "repo-graph",
+      "name": "visit_ClassDef",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "node"
+      ],
+      "owner_class": "_AstVisitor"
+    },
+    {
+      "id": 83,
+      "label": "Function",
+      "file_path": "src/repo_graph/indexer/ast_analyzer.py",
+      "line_number": 96,
+      "codebase": "repo-graph",
+      "name": "visit_FunctionDef",
+      "is_method": true,
+      "parameters": [
+        "self",
+        "node"
+      ],
+      "owner_class": "_AstVisitor"
+    }
+  ],
+  "edges": [
+    {
+      "source": 10,
+      "target": 17,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 10,
+      "target": 18,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 10,
+      "target": 31,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 10,
+      "target": 14,
+      "type": "CONTAINS_DIR"
+    },
+    {
+      "source": 10,
+      "target": 16,
+      "type": "CONTAINS_DIR"
+    },
+    {
+      "source": 14,
+      "target": 13,
+      "type": "CONTAINS_DIR"
+    },
+    {
+      "source": 13,
+      "target": 19,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 13,
+      "target": 24,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 13,
+      "target": 27,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 13,
+      "target": 11,
+      "type": "CONTAINS_DIR"
+    },
+    {
+      "source": 13,
+      "target": 12,
+      "type": "CONTAINS_DIR"
+    },
+    {
+      "source": 13,
+      "target": 15,
+      "type": "CONTAINS_DIR"
+    },
+    {
+      "source": 11,
+      "target": 20,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 11,
+      "target": 25,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 11,
+      "target": 28,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 12,
+      "target": 21,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 12,
+      "target": 26,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 12,
+      "target": 30,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 15,
+      "target": 22,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 15,
+      "target": 29,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 16,
+      "target": 23,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 16,
+      "target": 32,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 16,
+      "target": 33,
+      "type": "CONTAINS_FILE"
+    },
+    {
+      "source": 27,
+      "target": 40,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 27,
+      "target": 55,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 25,
+      "target": 44,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 25,
+      "target": 43,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 25,
+      "target": 46,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 25,
+      "target": 0,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 25,
+      "target": 9,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 28,
+      "target": 42,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 28,
+      "target": 39,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 28,
+      "target": 54,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 28,
+      "target": 4,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 28,
+      "target": 7,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 26,
+      "target": 6,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 26,
+      "target": 1,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 30,
+      "target": 2,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 30,
+      "target": 3,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 30,
+      "target": 5,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 29,
+      "target": 8,
+      "type": "DEFINES_CLASS"
+    },
+    {
+      "source": 32,
+      "target": 41,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 63,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 60,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 78,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 62,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 61,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 58,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 57,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 66,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 65,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 79,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 59,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 69,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 32,
+      "target": 70,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 68,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 67,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 64,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 76,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 74,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 75,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 72,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 73,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 71,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 33,
+      "target": 77,
+      "type": "DEFINES_FUNCTION"
+    },
+    {
+      "source": 55,
+      "target": 40,
+      "type": "CALLS"
+    },
+    {
+      "source": 46,
+      "target": 43,
+      "type": "CALLS"
+    },
+    {
+      "source": 54,
+      "target": 42,
+      "type": "CALLS"
+    },
+    {
+      "source": 54,
+      "target": 39,
+      "type": "CALLS"
+    },
+    {
+      "source": 63,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 60,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 78,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 62,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 61,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 58,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 57,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 66,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 65,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 79,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 59,
+      "target": 41,
+      "type": "CALLS"
+    },
+    {
+      "source": 9,
+      "target": 36,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 9,
+      "target": 82,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 9,
+      "target": 45,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 9,
+      "target": 83,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 9,
+      "target": 80,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 9,
+      "target": 81,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 6,
+      "target": 49,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 1,
+      "target": 50,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 2,
+      "target": 51,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 3,
+      "target": 52,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 5,
+      "target": 53,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 37,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 48,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 34,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 35,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 56,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 47,
+      "type": "HAS_METHOD"
+    },
+    {
+      "source": 8,
+      "target": 38,
+      "type": "HAS_METHOD"
+    }
+  ]
+}

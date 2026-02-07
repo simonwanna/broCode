@@ -1,0 +1,24 @@
+Node Labels:
+- Codebase
+  - Properties: name, root_path
+- Directory
+  - Properties: name, path, depth, codebase
+- File
+  - Properties: name, path, extension, size_bytes, codebase
+- Class
+  - Properties: name, file_path, line_number, codebase, base_classes
+- Function
+  - Properties: name, file_path, line_number, codebase, is_method, parameters, owner_class
+- Agent
+  - Properties: name, model
+
+Relationship Types:
+- (:Codebase)-[:CONTAINS_DIR]->(:Directory)
+- (:Codebase)-[:CONTAINS_FILE]->(:File)
+- (:Directory)-[:CONTAINS_DIR]->(:Directory)
+- (:Directory)-[:CONTAINS_FILE]->(:File)
+- (:File)-[:DEFINES_CLASS]->(:Class)
+- (:File)-[:DEFINES_FUNCTION]->(:Function)
+- (:Class)-[:HAS_METHOD]->(:Function)
+- (:Function)-[:CALLS]->(:Function)
+- (:Agent)-[:CLAIM {claim_reason: string}]->(:Codebase|Directory|File)
