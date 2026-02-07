@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "brocode": {
+      "type": "stdio",
+      "command": "/Users/tomboustedt/Desktop/broCode/mcp_server/.venv/bin/python",
+      "args": ["-m", "brocode_mcp.server"],
+      "cwd": "/Users/tomboustedt/Desktop/broCode/mcp_server",
+      "env": {
+        "NEO4J_URI": "neo4j+s://91297c4c.databases.neo4j.io",
+        "NEO4J_USERNAME": "neo4j",
+        "NEO4J_PASSWORD": "iZ14DfYtE5UZKLfhBGBdC8unRAkMHFKNB4M4GfofZaY",
+        "NEO4J_DATABASE": "neo4j"
+      }
+    }
+  }
+}

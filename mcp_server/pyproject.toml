@@ -1,0 +1,29 @@
+[project]
+name = "brocode-mcp"
+version = "0.1.0"
+description = "MCP server for multi-agent codebase coordination via Neo4j"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2.0,<3",
+    "neo4j>=5.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+brocode-mcp = "brocode_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

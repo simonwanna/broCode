@@ -1,5 +1,6 @@
 # Current State
 
+<<<<<<< Updated upstream
 ## Status
 **Phase**: Development
 **Last Updated**: 2026-02-07
@@ -20,6 +21,24 @@
 - `Skills.md` - Streamlit implementation patterns
 
 ## Recent Blockers
+=======
+## 🟢 Status
+**Phase**: Implementation
+**Last Updated**: 2026-02-07
+
+## 📋 Active Tasks
+- [x] Implement Automatic Indexer (Neo4j)
+- [x] Implement MCP Server
+- [x] Create Streamlit Visualization
+- [ ] Setup Basic CI/CD for TDD workflow
+
+## ✅ Completed
+- **Automatic Indexer**: Filesystem walking, Python AST analysis, .indexignore support, Neo4j persistence. 30+ tests passing. Located in `repo-graph/`.
+- **MCP Server**: FastMCP server with 4 tools (`brocode_claim_node`, `brocode_release_node`, `brocode_get_active_agents`, `brocode_query_codebase`). Async Neo4j driver, stdio transport, 22 tests passing. Located in `mcp_server/`.
+- **Streamlit Visualization**: Real-time graph viewer with auto-refresh (2s), agent claim highlighting, AST toggle, codebase selector. 15 tests passing. Located in `repo-graph/src/repo_graph/viz/`. Launch via `brocode-viz` or `streamlit run repo-graph/src/repo_graph/viz/app.py`.
+
+## 🚫 Recent Blockers
+>>>>>>> Stashed changes
 - None
 
 ## Notes for Agents
@@ -29,3 +48,5 @@
   - A major component is completed
   - A new blocker is identified
   - The project phase changes
+- The MCP server uses `fastmcp>=2.0,<3` with async Neo4j driver
+- Tools are accessible via `.fn` attribute when testing (FastMCP wraps in FunctionTool)

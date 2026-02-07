@@ -79,6 +79,7 @@ broCode/
 ├── CURRENT_STATE.md   # Current status and active tasks
 ├── Skills.md          # Implementation patterns for agents
 ├── project-skiss.md   # Original project specification
+<<<<<<< Updated upstream
 ├── repo-graph/        # Indexer implementation
 ├── mcp/               # MCP server implementation (TODO)
 └── ui/                # Streamlit visualization
@@ -88,6 +89,11 @@ broCode/
     ├── components/    # UI components (graph, sidebar)
     └── data/          # Data layer (mock + Neo4j abstraction)
         └── mock_data.json  # Mock codebase for demos
+=======
+├── repo-graph/        # Automatic indexer (complete)
+├── mcp_server/        # MCP server — FastMCP + async Neo4j (complete)
+└── ui/                # Streamlit visualization (TODO)
+>>>>>>> Stashed changes
 ```
 
 ## Development Guidelines
@@ -134,18 +140,37 @@ Since multiple agents collaborate on this repo, strict adherence to these standa
 ## Setup
 
 ### Prerequisites
-- Neo4j Community Edition (local instance)
+- Neo4j (Aura cloud or local Community Edition)
 - Python 3.10+
 - MCP-compatible client (Claude Code, etc.)
 
 ### Installation
 ```bash
-# TODO: Add installation steps once implemented
+# 1. Install the indexer
+cd repo-graph && pip install -e ".[dev]"
+
+# 2. Install the MCP server
+cd mcp_server && pip install -e ".[dev]"
+
+# 3. Set Neo4j credentials (or create a .env file)
+export NEO4J_URI="bolt://localhost:7687"
+export NEO4J_USERNAME="neo4j"
+export NEO4J_PASSWORD="your-password"
+export NEO4J_DATABASE="neo4j"
+```
+
+### Claude Code Integration
+```bash
+# Add the MCP server to Claude Code
+claude mcp add brocode \
+  --scope project \
+  -- python -m brocode_mcp.server
 ```
 
 ## Commands
 
 ```bash
+<<<<<<< Updated upstream
 # UI (from repo root)
 pip install -r ui/requirements.txt  # Install UI dependencies
 streamlit run ui/app.py             # Start visualization UI
@@ -153,4 +178,15 @@ streamlit run ui/app.py             # Start visualization UI
 # TODO: Add other commands once implemented
 # python -m repo_graph index .      # Re-index the codebase
 # python -m mcp_server              # Start MCP server
+=======
+# Index a repository into Neo4j
+repo-graph /path/to/repo --analyze-python
+
+# Run the MCP server (stdio)
+brocode-mcp
+
+# Run tests
+cd repo-graph && pytest tests/ -v
+cd mcp_server && pytest tests/ -v
+>>>>>>> Stashed changes
 ```
