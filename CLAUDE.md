@@ -41,8 +41,23 @@ Provides tools for agents to interact with the Knowledge Graph.
 - `get_active_agents` - Query which agents are working where
 - `query_codebase` - Search/query the codebase structure
 
+**Claim Reasons** (initial values, may expand):
+- `direct` - Agent is actively editing this file/directory
+- `in_context` - Agent has this file in memory/context
+- `dependency` - File is a dependency of something being edited (auto-claimed)
+
 ### 3. Visualization (Streamlit)
 Demo UI showing real-time agent activity on the codebase graph. Claimed nodes light up with agent-specific colors.
+
+**Data Layer:**
+- Uses **mock data** (`ui/data/mock_data.json`) for POC and demos
+- Designed with abstraction layer (`DataProvider`) for easy Neo4j integration later
+- Mock data represents the broCode repo structure with simulated claims
+
+**Color Scheme:**
+- Claude: Orange shades (direct=red-orange, in_context=orange, dependency=light orange)
+- Gemini: Blue shades (direct=medium blue, in_context=royal blue, dependency=sky blue)
+- Unclaimed: Gray-blue
 
 ## Tech Stack
 
@@ -64,9 +79,15 @@ broCode/
 ├── CURRENT_STATE.md   # Current status and active tasks
 ├── Skills.md          # Implementation patterns for agents
 ├── project-skiss.md   # Original project specification
-├── indexer/           # Automatic indexer (TODO)
+├── repo-graph/        # Indexer implementation
 ├── mcp/               # MCP server implementation (TODO)
-└── ui/                # Streamlit visualization (TODO)
+└── ui/                # Streamlit visualization
+    ├── app.py         # Main Streamlit entry point
+    ├── config.py      # Colors, styling, settings
+    ├── requirements.txt
+    ├── components/    # UI components (graph, sidebar)
+    └── data/          # Data layer (mock + Neo4j abstraction)
+        └── mock_data.json  # Mock codebase for demos
 ```
 
 ## Development Guidelines
@@ -95,7 +116,7 @@ Since multiple agents collaborate on this repo, strict adherence to these standa
 3. **Documentation Maintenance**
    - **Live Documentation**: If code behavior changes, `CLAUDE.md` and `CURRENT_STATE.md` MUST be updated immediately.
    - **Minimal Updates**: Keep documentation updates focused on the specific change to avoid large, conflicting diffs.
-   - **State Tracking**: `CURRENT_STATE.md` is the source of truth for the project's current status.
+   - **State Tracking**: `CURRENT_STATE.md` is the source of truth for the project's current status. There should be one in each high-level folder.
 
 4. **Informative Change Messages**
    - **Detail is Key**: Commit messages and pull request descriptions must be comprehensive to aid future agents.
@@ -125,8 +146,11 @@ Since multiple agents collaborate on this repo, strict adherence to these standa
 ## Commands
 
 ```bash
-# TODO: Add common commands once implemented
-# npm run index     # Re-index the codebase
-# npm run mcp       # Start MCP server
-# npm run ui        # Start Streamlit visualization
+# UI (from repo root)
+pip install -r ui/requirements.txt  # Install UI dependencies
+streamlit run ui/app.py             # Start visualization UI
+
+# TODO: Add other commands once implemented
+# python -m repo_graph index .      # Re-index the codebase
+# python -m mcp_server              # Start MCP server
 ```

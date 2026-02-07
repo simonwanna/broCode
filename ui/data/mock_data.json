@@ -1,0 +1,59 @@
+{
+  "codebase": {
+    "id": "codebase_brocode",
+    "name": "broCode",
+    "root_path": "/home/simon/Devspace/broCode"
+  },
+  "nodes": [
+    {"id": "dir_root", "type": "Directory", "name": "broCode", "path": "/", "depth": 0},
+    {"id": "dir_repo_graph", "type": "Directory", "name": "repo-graph", "path": "/repo-graph", "depth": 1},
+    {"id": "dir_ui", "type": "Directory", "name": "ui", "path": "/ui", "depth": 1},
+    {"id": "dir_src", "type": "Directory", "name": "src", "path": "/repo-graph/src", "depth": 2},
+    {"id": "dir_scripts", "type": "Directory", "name": "scripts", "path": "/repo-graph/scripts", "depth": 2},
+    {"id": "dir_tests", "type": "Directory", "name": "tests", "path": "/repo-graph/tests", "depth": 2},
+    {"id": "dir_repo_graph_pkg", "type": "Directory", "name": "repo_graph", "path": "/repo-graph/src/repo_graph", "depth": 3},
+    {"id": "dir_indexer", "type": "Directory", "name": "indexer", "path": "/repo-graph/src/repo_graph/indexer", "depth": 4},
+    {"id": "dir_models", "type": "Directory", "name": "models", "path": "/repo-graph/src/repo_graph/models", "depth": 4},
+    {"id": "dir_storage", "type": "Directory", "name": "storage", "path": "/repo-graph/src/repo_graph/storage", "depth": 4},
+    {"id": "file_claude_md", "type": "File", "name": "CLAUDE.md", "path": "/CLAUDE.md", "extension": "md"},
+    {"id": "file_skills_md", "type": "File", "name": "Skills.md", "path": "/Skills.md", "extension": "md"},
+    {"id": "file_readme", "type": "File", "name": "README.md", "path": "/README.md", "extension": "md"},
+    {"id": "file_app_py", "type": "File", "name": "app.py", "path": "/ui/app.py", "extension": "py"},
+    {"id": "file_cli", "type": "File", "name": "cli.py", "path": "/repo-graph/src/repo_graph/cli.py", "extension": "py"},
+    {"id": "file_ast_analyzer", "type": "File", "name": "ast_analyzer.py", "path": "/repo-graph/src/repo_graph/indexer/ast_analyzer.py", "extension": "py"},
+    {"id": "file_filesystem", "type": "File", "name": "filesystem.py", "path": "/repo-graph/src/repo_graph/indexer/filesystem.py", "extension": "py"},
+    {"id": "file_nodes", "type": "File", "name": "nodes.py", "path": "/repo-graph/src/repo_graph/models/nodes.py", "extension": "py"},
+    {"id": "file_ast_nodes", "type": "File", "name": "ast_nodes.py", "path": "/repo-graph/src/repo_graph/models/ast_nodes.py", "extension": "py"},
+    {"id": "file_neo4j_store", "type": "File", "name": "neo4j_store.py", "path": "/repo-graph/src/repo_graph/storage/neo4j_store.py", "extension": "py"},
+    {"id": "file_test_indexer", "type": "File", "name": "test_indexer.py", "path": "/repo-graph/tests/test_indexer.py", "extension": "py"},
+    {"id": "file_test_ast", "type": "File", "name": "test_ast_analyzer.py", "path": "/repo-graph/tests/test_ast_analyzer.py", "extension": "py"}
+  ],
+  "edges": [
+    {"source": "dir_root", "target": "dir_repo_graph", "type": "CONTAINS_DIR"},
+    {"source": "dir_root", "target": "dir_ui", "type": "CONTAINS_DIR"},
+    {"source": "dir_root", "target": "file_claude_md", "type": "CONTAINS_FILE"},
+    {"source": "dir_root", "target": "file_skills_md", "type": "CONTAINS_FILE"},
+    {"source": "dir_root", "target": "file_readme", "type": "CONTAINS_FILE"},
+    {"source": "dir_repo_graph", "target": "dir_src", "type": "CONTAINS_DIR"},
+    {"source": "dir_repo_graph", "target": "dir_scripts", "type": "CONTAINS_DIR"},
+    {"source": "dir_repo_graph", "target": "dir_tests", "type": "CONTAINS_DIR"},
+    {"source": "dir_src", "target": "dir_repo_graph_pkg", "type": "CONTAINS_DIR"},
+    {"source": "dir_repo_graph_pkg", "target": "dir_indexer", "type": "CONTAINS_DIR"},
+    {"source": "dir_repo_graph_pkg", "target": "dir_models", "type": "CONTAINS_DIR"},
+    {"source": "dir_repo_graph_pkg", "target": "dir_storage", "type": "CONTAINS_DIR"},
+    {"source": "dir_repo_graph_pkg", "target": "file_cli", "type": "CONTAINS_FILE"},
+    {"source": "dir_ui", "target": "file_app_py", "type": "CONTAINS_FILE"},
+    {"source": "dir_indexer", "target": "file_ast_analyzer", "type": "CONTAINS_FILE"},
+    {"source": "dir_indexer", "target": "file_filesystem", "type": "CONTAINS_FILE"},
+    {"source": "dir_models", "target": "file_nodes", "type": "CONTAINS_FILE"},
+    {"source": "dir_models", "target": "file_ast_nodes", "type": "CONTAINS_FILE"},
+    {"source": "dir_storage", "target": "file_neo4j_store", "type": "CONTAINS_FILE"},
+    {"source": "dir_tests", "target": "file_test_indexer", "type": "CONTAINS_FILE"},
+    {"source": "dir_tests", "target": "file_test_ast", "type": "CONTAINS_FILE"}
+  ],
+  "agents": [
+    {"id": "agent_claude", "name": "Claude", "model": "claude-opus-4-5"},
+    {"id": "agent_gemini", "name": "Gemini", "model": "gemini-2.0-flash"}
+  ],
+  "claims": []
+}
