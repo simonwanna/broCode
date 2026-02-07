@@ -1,7 +1,7 @@
-.git
-.venv
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
 .env
-
-**/__pycache__
-
-project-skiss.md

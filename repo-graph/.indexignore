@@ -1,0 +1,11 @@
+# Patterns work like .gitignore
+# Exact names match any path component: .env, *.pyc
+# Glob patterns: *.log, build/**
+# Double-star prefix: **/test_*, **/__pycache__
+
+.env
+*.pyc
+.pytest_cache
+.venv/
+**/__pycache__
+**/repo_graph.egg-info
