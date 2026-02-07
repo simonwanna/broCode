@@ -125,3 +125,32 @@ RETURN labels(n) AS node_labels,
 ORDER BY node_path
 LIMIT $limit
 """
+
+# ===== MESSAGING =====
+
+# Check if an Agent node exists by name.
+CHECK_AGENT_EXISTS = """
+MATCH (a:Agent {name: $agent_name})
+RETURN a.name AS name, a.model AS model
+LIMIT 1
+"""
+
+# Append a JSON-encoded message string to the target agent's messages list.
+# Uses coalesce to initialize the list if it doesn't exist yet.
+SEND_MESSAGE = """
+MATCH (a:Agent {name: $to_agent})
+SET a.messages = coalesce(a.messages, []) + $message
+RETURN size(a.messages) AS message_count
+"""
+
+# Retrieve the messages list for an agent.
+GET_MESSAGES = """
+MATCH (a:Agent {name: $agent_name})
+RETURN coalesce(a.messages, []) AS messages
+"""
+
+# Clear all messages for an agent (inbox model — read then clear).
+CLEAR_MESSAGES = """
+MATCH (a:Agent {name: $agent_name})
+SET a.messages = []
+"""

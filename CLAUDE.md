@@ -36,15 +36,18 @@ Creates and maintains the Knowledge Graph representation of the codebase.
 Provides tools for agents to interact with the Knowledge Graph.
 
 **Tools:**
-- `claim_node` - Claim a file/directory the agent is working on
+- `claim_node` - Claim a file/directory with a description of planned work
 - `release_and_reindex` - Release claimed nodes and trigger re-indexing
 - `get_active_agents` - Query which agents are working where
 - `query_codebase` - Search/query the codebase structure
+- `send_message` - Send a message to another agent (e.g., request access to a claimed node)
+- `get_messages` - Retrieve and clear incoming messages (inbox model)
 
-**Claim Reasons** (initial values, may expand):
-- `direct` - Agent is actively editing this file/directory
-- `in_context` - Agent has this file in memory/context
-- `dependency` - File is a dependency of something being edited (auto-claimed)
+**Claim Reasons:**
+Free-text description of what the agent plans to do with the file. Required and cannot be empty. Examples:
+- `"Refactoring error handling in login flow"`
+- `"Adding unit tests for new parser"`
+- `"Reviewing module for dependency analysis"`
 
 ### 3. Visualization (Streamlit)
 Demo UI showing real-time agent activity on the codebase graph. Claimed nodes light up with agent-specific colors.
@@ -55,8 +58,8 @@ Demo UI showing real-time agent activity on the codebase graph. Claimed nodes li
 - Mock data represents the broCode repo structure with simulated claims
 
 **Color Scheme:**
-- Claude: Orange shades (direct=red-orange, in_context=orange, dependency=light orange)
-- Gemini: Blue shades (direct=medium blue, in_context=royal blue, dependency=sky blue)
+- Claude: Orange (#FF8C00)
+- Gemini: Blue (#4169E1)
 - Unclaimed: Gray-blue
 
 ## Tech Stack

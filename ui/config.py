@@ -2,25 +2,18 @@
 UI Configuration for broCode visualization.
 
 Defines colors, styles, and settings for the graph visualization.
-Colors are designed to show agent ownership and claim intensity.
+Each agent has a single base color used for all their claims.
 """
 
-# Agent color schemes
-# Each agent has a base color with variations for claim reasons
+# Agent color schemes — one base color per agent
 AGENT_COLORS = {
     "agent_claude": {
         "name": "Claude",
         "base": "#FF8C00",  # Dark orange
-        "direct": "#FF4500",      # Orange-red (most intense)
-        "in_context": "#FF8C00",  # Dark orange (medium)
-        "dependency": "#FFB366",  # Light orange (least intense)
     },
     "agent_gemini": {
         "name": "Gemini",
         "base": "#4169E1",  # Royal blue
-        "direct": "#0000CD",      # Medium blue (most intense)
-        "in_context": "#4169E1",  # Royal blue (medium)
-        "dependency": "#87CEEB",  # Sky blue (least intense)
     },
 }
 
@@ -69,7 +62,6 @@ def get_node_color(node_id: str, claims: list, agents: dict) -> str:
     """
     Determine the color for a node based on claims.
 
-    Priority: direct > in_context > dependency
     If multiple agents claim the same node (shouldn't happen in practice),
     the first claim wins.
 
@@ -87,23 +79,16 @@ def get_node_color(node_id: str, claims: list, agents: dict) -> str:
     if not node_claims:
         return UNCLAIMED_COLOR
 
-    # Priority order for claim reasons
-    priority = {"direct": 0, "in_context": 1, "dependency": 2}
-
-    # Sort by priority (direct first)
-    node_claims.sort(key=lambda c: priority.get(c.claim_reason, 99))
-
     claim = node_claims[0]
     agent_colors = AGENT_COLORS.get(claim.agent_id, {})
 
-    return agent_colors.get(claim.claim_reason, UNCLAIMED_COLOR)
+    return agent_colors.get("base", UNCLAIMED_COLOR)
 
 
 def get_claim_reason_description(reason: str) -> str:
-    """Get human-readable description of a claim reason."""
-    descriptions = {
-        "direct": "Actively editing",
-        "in_context": "In agent's context",
-        "dependency": "Dependency of claimed node",
-    }
-    return descriptions.get(reason, reason)
+    """Return the claim reason description.
+
+    Claim reasons are free-text descriptions of planned work, so the
+    reason itself IS the description — just pass it through.
+    """
+    return reason

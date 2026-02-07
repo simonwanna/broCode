@@ -42,6 +42,11 @@ def mock_db() -> AsyncMock:
     }
     db.get_active_agents.return_value = []
     db.query_codebase.return_value = []
+    # Messaging defaults
+    db.check_agent_exists.return_value = {"name": "gemini-1", "model": "gemini"}
+    db.send_message.return_value = {"message_count": 1}
+    db.get_messages.return_value = []
+    db.clear_messages.return_value = None
     return db
 
 

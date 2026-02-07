@@ -145,7 +145,7 @@ class TestMockDataProvider:
 
     def test_add_claim_creates_claim(self, provider):
         """add_claim must create a new claim."""
-        provider.add_claim("agent_claude", "file_main", "direct")
+        provider.add_claim("agent_claude", "file_main", "Refactoring error handling")
 
         claims = provider.get_claims()
         assert len(claims) == 1
@@ -153,21 +153,21 @@ class TestMockDataProvider:
         claim = claims[0]
         assert claim.agent_id == "agent_claude"
         assert claim.node_id == "file_main"
-        assert claim.claim_reason == "direct"
+        assert claim.claim_reason == "Refactoring error handling"
 
     def test_add_claim_replaces_existing(self, provider):
         """Adding a claim for same agent+node should replace, not duplicate."""
-        provider.add_claim("agent_claude", "file_main", "direct")
-        provider.add_claim("agent_claude", "file_main", "in_context")
+        provider.add_claim("agent_claude", "file_main", "Initial exploration")
+        provider.add_claim("agent_claude", "file_main", "Updating input validation")
 
         claims = provider.get_claims()
         assert len(claims) == 1
-        assert claims[0].claim_reason == "in_context"
+        assert claims[0].claim_reason == "Updating input validation"
 
     def test_add_claim_multiple_agents_same_node(self, provider):
         """Different agents can claim the same node (conflict scenario)."""
-        provider.add_claim("agent_claude", "file_main", "direct")
-        provider.add_claim("agent_gemini", "file_main", "direct")
+        provider.add_claim("agent_claude", "file_main", "Refactoring imports")
+        provider.add_claim("agent_gemini", "file_main", "Adding type annotations")
 
         claims = provider.get_claims()
         assert len(claims) == 2
@@ -178,16 +178,16 @@ class TestMockDataProvider:
 
     def test_add_claim_multiple_nodes_same_agent(self, provider):
         """One agent can claim multiple nodes."""
-        provider.add_claim("agent_claude", "file_main", "direct")
-        provider.add_claim("agent_claude", "file_utils", "in_context")
+        provider.add_claim("agent_claude", "file_main", "Fixing authentication bug")
+        provider.add_claim("agent_claude", "file_utils", "Adding helper functions")
 
         claims = provider.get_claims()
         assert len(claims) == 2
 
     def test_remove_claim_removes_specific_claim(self, provider):
         """remove_claim must remove only the specified agent+node claim."""
-        provider.add_claim("agent_claude", "file_main", "direct")
-        provider.add_claim("agent_claude", "file_utils", "in_context")
+        provider.add_claim("agent_claude", "file_main", "Editing module")
+        provider.add_claim("agent_claude", "file_utils", "Reviewing utils")
 
         provider.remove_claim("agent_claude", "file_main")
 
@@ -203,9 +203,9 @@ class TestMockDataProvider:
 
     def test_clear_agent_claims_removes_all_for_agent(self, provider):
         """clear_agent_claims must remove all claims for that agent only."""
-        provider.add_claim("agent_claude", "file_main", "direct")
-        provider.add_claim("agent_claude", "file_utils", "in_context")
-        provider.add_claim("agent_gemini", "file_main", "direct")
+        provider.add_claim("agent_claude", "file_main", "Editing main module")
+        provider.add_claim("agent_claude", "file_utils", "Updating utilities")
+        provider.add_claim("agent_gemini", "file_main", "Reviewing changes")
 
         provider.clear_agent_claims("agent_claude")
 
@@ -213,22 +213,12 @@ class TestMockDataProvider:
         assert len(claims) == 1
         assert claims[0].agent_id == "agent_gemini"
 
-    # === Claim reason tests ===
+    # === Claim reason tests (free-text) ===
 
-    def test_claim_reasons_direct(self, provider):
-        """'direct' claim reason should be stored correctly."""
-        provider.add_claim("agent_claude", "file_main", "direct")
-        assert provider.get_claims()[0].claim_reason == "direct"
-
-    def test_claim_reasons_in_context(self, provider):
-        """'in_context' claim reason should be stored correctly."""
-        provider.add_claim("agent_claude", "file_main", "in_context")
-        assert provider.get_claims()[0].claim_reason == "in_context"
-
-    def test_claim_reasons_dependency(self, provider):
-        """'dependency' claim reason should be stored correctly."""
-        provider.add_claim("agent_claude", "file_main", "dependency")
-        assert provider.get_claims()[0].claim_reason == "dependency"
+    def test_claim_reason_stores_free_text(self, provider):
+        """Free-text claim reasons should roundtrip correctly."""
+        provider.add_claim("agent_claude", "file_main", "Adding TypeScript AST parsing support")
+        assert provider.get_claims()[0].claim_reason == "Adding TypeScript AST parsing support"
 
 
 class TestDataProviderFactory:
@@ -279,8 +269,8 @@ class TestDataClasses:
 
     def test_claim_dataclass_fields(self):
         """Claim must have all required fields."""
-        claim = Claim(agent_id="agent", node_id="node", claim_reason="direct")
+        claim = Claim(agent_id="agent", node_id="node", claim_reason="Writing unit tests for parser")
         assert claim.agent_id == "agent"
         assert claim.node_id == "node"
-        assert claim.claim_reason == "direct"
+        assert claim.claim_reason == "Writing unit tests for parser"
         assert claim.timestamp is None  # Optional

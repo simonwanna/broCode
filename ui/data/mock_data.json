@@ -56,10 +56,10 @@
     {"id": "agent_gemini", "name": "Gemini", "model": "gemini-2.0-flash"}
   ],
   "claims": [
-    {"agent_id": "agent_claude", "node_id": "file_ast_analyzer", "claim_reason": "direct", "timestamp": "2026-02-07T12:00:00Z"},
-    {"agent_id": "agent_claude", "node_id": "file_test_ast", "claim_reason": "direct", "timestamp": "2026-02-07T12:05:00Z"},
-    {"agent_id": "agent_claude", "node_id": "dir_indexer", "claim_reason": "in_context", "timestamp": "2026-02-07T12:00:00Z"},
-    {"agent_id": "agent_gemini", "node_id": "file_app_py", "claim_reason": "direct", "timestamp": "2026-02-07T12:10:00Z"},
-    {"agent_id": "agent_gemini", "node_id": "dir_ui", "claim_reason": "in_context", "timestamp": "2026-02-07T12:10:00Z"}
+    {"agent_id": "agent_claude", "node_id": "file_ast_analyzer", "claim_reason": "Adding TypeScript AST parsing support", "timestamp": "2026-02-07T12:00:00Z"},
+    {"agent_id": "agent_claude", "node_id": "file_test_ast", "claim_reason": "Writing tests for new TypeScript parser", "timestamp": "2026-02-07T12:05:00Z"},
+    {"agent_id": "agent_claude", "node_id": "dir_indexer", "claim_reason": "Reviewing indexer module for refactor", "timestamp": "2026-02-07T12:00:00Z"},
+    {"agent_id": "agent_gemini", "node_id": "file_app_py", "claim_reason": "Implementing real-time graph updates", "timestamp": "2026-02-07T12:10:00Z"},
+    {"agent_id": "agent_gemini", "node_id": "dir_ui", "claim_reason": "Adding dark mode theme support", "timestamp": "2026-02-07T12:10:00Z"}
   ]
 }

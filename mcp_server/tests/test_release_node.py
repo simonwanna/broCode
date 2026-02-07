@@ -1,13 +1,13 @@
 """Tests for the brocode_release_node tool.
 
-Covers: successful release with reindex, releasing nonexistent claim,
-reindex when root_path missing from graph, reindex subprocess failure,
+Covers: successful release with subtree reindex, releasing nonexistent claim,
+reindex when root_path missing from graph, reindex function failure,
 and file vs directory subtree clearing.
 """
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -19,7 +19,7 @@ release_node = _tool.fn
 
 @pytest.mark.asyncio
 async def test_release_and_reindex_file(mock_db, mock_ctx):
-    """Releasing a file should clear it and reindex from the repo root."""
+    """Releasing a file should clear it and reindex the file's parent subtree."""
     mock_db.release_claim.return_value = {
         "agent_name": "claude-1",
         "labels": ["File"],
@@ -27,11 +27,10 @@ async def test_release_and_reindex_file(mock_db, mock_ctx):
         "root_path": "/home/user/my-repo",
     }
 
-    mock_proc = AsyncMock()
-    mock_proc.returncode = 0
-    mock_proc.communicate.return_value = (b"Done -- graph written.", b"")
-
-    with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+    with patch(
+        "brocode_mcp.server._reindex_sync",
+        return_value="Reindexed 'src/app.py': 0 dirs, 5 files, 10 functions, 3 classes",
+    ) as mock_reindex:
         result = await release_node(
             agent_name="claude-1",
             node_path="src/app.py",
@@ -41,13 +40,18 @@ async def test_release_and_reindex_file(mock_db, mock_ctx):
 
     assert result["status"] == "released"
     assert result["reindex_status"] == "success"
+    assert "5 files" in result["reindex_message"]
     # File node should be cleared (is_directory=False)
     mock_db.clear_subtree.assert_awaited_once_with("src/app.py", "my-repo", False)
+    # Reindex scoped to subtree with correct args
+    mock_reindex.assert_called_once_with(
+        "/home/user/my-repo", "src/app.py", "my-repo", False
+    )
 
 
 @pytest.mark.asyncio
 async def test_release_and_reindex_directory(mock_db, mock_ctx):
-    """Releasing a directory should clear the subtree and reindex."""
+    """Releasing a directory should clear the subtree and reindex that directory."""
     mock_db.release_claim.return_value = {
         "agent_name": "claude-1",
         "labels": ["Directory"],
@@ -55,11 +59,10 @@ async def test_release_and_reindex_directory(mock_db, mock_ctx):
         "root_path": "/home/user/my-repo",
     }
 
-    mock_proc = AsyncMock()
-    mock_proc.returncode = 0
-    mock_proc.communicate.return_value = (b"Done.", b"")
-
-    with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+    with patch(
+        "brocode_mcp.server._reindex_sync",
+        return_value="Reindexed 'src/utils': 1 dirs, 3 files, 0 functions, 0 classes",
+    ) as mock_reindex:
         result = await release_node(
             agent_name="claude-1",
             node_path="src/utils",
@@ -71,6 +74,9 @@ async def test_release_and_reindex_directory(mock_db, mock_ctx):
     assert result["reindex_status"] == "success"
     # Directory node should be cleared (is_directory=True)
     mock_db.clear_subtree.assert_awaited_once_with("src/utils", "my-repo", True)
+    mock_reindex.assert_called_once_with(
+        "/home/user/my-repo", "src/utils", "my-repo", True
+    )
 
 
 @pytest.mark.asyncio
@@ -113,8 +119,8 @@ async def test_release_skips_reindex_when_no_root_path(mock_db, mock_ctx):
 
 
 @pytest.mark.asyncio
-async def test_release_reindex_cli_missing(mock_db, mock_ctx):
-    """Missing repo-graph CLI should report error gracefully."""
+async def test_release_reindex_failure(mock_db, mock_ctx):
+    """Reindex errors should be reported gracefully without breaking release."""
     mock_db.release_claim.return_value = {
         "agent_name": "claude-1",
         "labels": ["File"],
@@ -123,8 +129,8 @@ async def test_release_reindex_cli_missing(mock_db, mock_ctx):
     }
 
     with patch(
-        "asyncio.create_subprocess_exec",
-        side_effect=FileNotFoundError("python not found"),
+        "brocode_mcp.server._reindex_sync",
+        side_effect=FileNotFoundError("Repo root '/home/user/my-repo' is not a directory"),
     ):
         result = await release_node(
             agent_name="claude-1",
@@ -135,33 +141,6 @@ async def test_release_reindex_cli_missing(mock_db, mock_ctx):
 
     assert result["status"] == "released"
     assert result["reindex_status"] == "error"
-    assert "not found" in result["reindex_message"].lower()
+    assert "not a directory" in result["reindex_message"].lower()
     # Subtree should still be cleared even if reindex fails
     mock_db.clear_subtree.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_release_reindex_subprocess_failure(mock_db, mock_ctx):
-    """Non-zero exit from repo-graph should report error."""
-    mock_db.release_claim.return_value = {
-        "agent_name": "claude-1",
-        "labels": ["File"],
-        "path": "src/app.py",
-        "root_path": "/home/user/my-repo",
-    }
-
-    mock_proc = AsyncMock()
-    mock_proc.returncode = 1
-    mock_proc.communicate.return_value = (b"", b"Error: invalid path")
-
-    with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
-        result = await release_node(
-            agent_name="claude-1",
-            node_path="src/app.py",
-            codebase_name="my-repo",
-            ctx=mock_ctx,
-        )
-
-    assert result["status"] == "released"
-    assert result["reindex_status"] == "error"
-    assert "invalid path" in result["reindex_message"].lower()

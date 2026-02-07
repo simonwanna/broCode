@@ -191,20 +191,33 @@ def analyze_python_files(
                 ))
 
     # Phase 4: Build CALLS edges (function → function, best-effort)
+    #
+    # Build a global lookup: function name → list of (file_path, func_name)
+    # so we can resolve cross-file calls.  When a name is ambiguous (defined
+    # in multiple files), we prefer a same-file match; otherwise we take the
+    # first cross-file match.
+    global_funcs: Dict[str, List[Tuple[str, str]]] = {}
+    for fpath, visitor in visitors.items():
+        for fn in visitor.functions:
+            global_funcs.setdefault(fn.name, []).append((fpath, fn.name))
+
     for rel_path, visitor in visitors.items():
-        # Local functions in this file
         local_funcs = {fn.name for fn in visitor.functions}
 
         for caller_qualified, callee_name, _lineno in visitor.calls:
             caller_name = caller_qualified
 
-            # Try to resolve callee
             callee_file: Optional[str] = None
             callee_func_name = callee_name
 
-            # Same file?
+            # Same file first (highest confidence)
             if callee_name in local_funcs:
                 callee_file = rel_path
+            # Cross-file: look up in the global index
+            elif callee_name in global_funcs:
+                candidates = global_funcs[callee_name]
+                # Pick the first match (there may be duplicates across files)
+                callee_file, callee_func_name = candidates[0]
 
             if callee_file:
                 result.edges.append(Edge(

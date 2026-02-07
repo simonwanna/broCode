@@ -10,7 +10,7 @@ Node Labels:
 - Function
   - Properties: name, file_path, line_number, codebase, is_method, parameters, owner_class
 - Agent
-  - Properties: name, model
+  - Properties: name, model, messages (list of JSON strings — agent inbox)
 
 Relationship Types:
 - (:Codebase)-[:CONTAINS_DIR]->(:Directory)
@@ -22,3 +22,4 @@ Relationship Types:
 - (:Class)-[:HAS_METHOD]->(:Function)
 - (:Function)-[:CALLS]->(:Function)
 - (:Agent)-[:CLAIM {claim_reason: string}]->(:Codebase|Directory|File)
+  # claim_reason is free-text describing what the agent plans to do (e.g. "Refactoring error handling")

@@ -3,8 +3,8 @@ Tests for UI configuration and color logic.
 
 Why these tests matter:
 - Color selection must work correctly for visualization
-- Agent colors and claim reason intensity are core to the demo
-- When new agents or claim reasons are added, these tests catch regressions
+- Agent colors are core to the demo
+- When new agents are added, these tests catch regressions
 """
 
 import pytest
@@ -28,24 +28,20 @@ class TestAgentColors:
     """Tests for agent color configuration."""
 
     def test_claude_colors_defined(self):
-        """Claude must have all required color definitions."""
+        """Claude must have name and base color definitions."""
         assert "agent_claude" in AGENT_COLORS
 
         claude = AGENT_COLORS["agent_claude"]
+        assert "name" in claude
         assert "base" in claude
-        assert "direct" in claude
-        assert "in_context" in claude
-        assert "dependency" in claude
 
     def test_gemini_colors_defined(self):
-        """Gemini must have all required color definitions."""
+        """Gemini must have name and base color definitions."""
         assert "agent_gemini" in AGENT_COLORS
 
         gemini = AGENT_COLORS["agent_gemini"]
+        assert "name" in gemini
         assert "base" in gemini
-        assert "direct" in gemini
-        assert "in_context" in gemini
-        assert "dependency" in gemini
 
     def test_colors_are_valid_hex(self):
         """All colors must be valid hex color codes."""
@@ -71,94 +67,56 @@ class TestGetNodeColor:
         color = get_node_color("some_node", claims, AGENT_COLORS)
         assert color == UNCLAIMED_COLOR
 
-    def test_claimed_node_returns_agent_color(self):
-        """Claimed nodes should return the agent's color for that claim reason."""
-        claims = [Claim(agent_id="agent_claude", node_id="file_main", claim_reason="direct")]
+    def test_claimed_node_returns_agent_base_color(self):
+        """Claimed nodes should return the agent's base color regardless of claim reason."""
+        claims = [Claim(agent_id="agent_claude", node_id="file_main", claim_reason="Refactoring error handling")]
         color = get_node_color("file_main", claims, AGENT_COLORS)
 
-        expected = AGENT_COLORS["agent_claude"]["direct"]
+        expected = AGENT_COLORS["agent_claude"]["base"]
         assert color == expected
 
-    def test_in_context_claim_returns_correct_color(self):
-        """in_context claims should return medium intensity color."""
-        claims = [Claim(agent_id="agent_claude", node_id="file_main", claim_reason="in_context")]
-        color = get_node_color("file_main", claims, AGENT_COLORS)
-
-        expected = AGENT_COLORS["agent_claude"]["in_context"]
-        assert color == expected
-
-    def test_dependency_claim_returns_correct_color(self):
-        """dependency claims should return low intensity color."""
-        claims = [Claim(agent_id="agent_gemini", node_id="file_main", claim_reason="dependency")]
-        color = get_node_color("file_main", claims, AGENT_COLORS)
-
-        expected = AGENT_COLORS["agent_gemini"]["dependency"]
-        assert color == expected
-
-    def test_direct_claim_has_priority_over_in_context(self):
-        """If multiple claims exist, 'direct' should take priority."""
-        claims = [
-            Claim(agent_id="agent_claude", node_id="file_main", claim_reason="in_context"),
-            Claim(agent_id="agent_gemini", node_id="file_main", claim_reason="direct"),
-        ]
-        color = get_node_color("file_main", claims, AGENT_COLORS)
-
-        # direct should win, so we expect Gemini's direct color
-        expected = AGENT_COLORS["agent_gemini"]["direct"]
-        assert color == expected
-
-    def test_in_context_has_priority_over_dependency(self):
-        """in_context should take priority over dependency."""
-        claims = [
-            Claim(agent_id="agent_gemini", node_id="file_main", claim_reason="dependency"),
-            Claim(agent_id="agent_claude", node_id="file_main", claim_reason="in_context"),
-        ]
-        color = get_node_color("file_main", claims, AGENT_COLORS)
-
-        # in_context should win
-        expected = AGENT_COLORS["agent_claude"]["in_context"]
-        assert color == expected
+    def test_different_reasons_return_same_base_color(self):
+        """Different free-text reasons for the same agent should all use the base color."""
+        for reason in ["Adding tests", "Fixing bug", "Reviewing code"]:
+            claims = [Claim(agent_id="agent_gemini", node_id="file_main", claim_reason=reason)]
+            color = get_node_color("file_main", claims, AGENT_COLORS)
+            assert color == AGENT_COLORS["agent_gemini"]["base"]
 
     def test_unknown_agent_returns_unclaimed_color(self):
         """Claims from unknown agents should fall back to unclaimed color."""
-        claims = [Claim(agent_id="agent_unknown", node_id="file_main", claim_reason="direct")]
+        claims = [Claim(agent_id="agent_unknown", node_id="file_main", claim_reason="Working on it")]
         color = get_node_color("file_main", claims, AGENT_COLORS)
         assert color == UNCLAIMED_COLOR
 
     def test_unrelated_claims_dont_affect_node(self):
         """Claims on other nodes should not affect this node's color."""
-        claims = [Claim(agent_id="agent_claude", node_id="other_file", claim_reason="direct")]
+        claims = [Claim(agent_id="agent_claude", node_id="other_file", claim_reason="Editing")]
         color = get_node_color("file_main", claims, AGENT_COLORS)
         assert color == UNCLAIMED_COLOR
 
+    def test_first_claim_wins_for_multiple_claims(self):
+        """If multiple agents claim the same node, the first claim wins."""
+        claims = [
+            Claim(agent_id="agent_claude", node_id="file_main", claim_reason="Editing auth logic"),
+            Claim(agent_id="agent_gemini", node_id="file_main", claim_reason="Reviewing code"),
+        ]
+        color = get_node_color("file_main", claims, AGENT_COLORS)
+        expected = AGENT_COLORS["agent_claude"]["base"]
+        assert color == expected
+
 
 class TestClaimReasonDescriptions:
-    """Tests for claim reason descriptions."""
+    """Tests for claim reason descriptions — now just passthrough."""
 
-    def test_direct_description(self):
-        """'direct' should have a descriptive label."""
-        desc = get_claim_reason_description("direct")
-        assert desc is not None
-        assert len(desc) > 0
-        assert "edit" in desc.lower() or "active" in desc.lower()
+    def test_free_text_returns_itself(self):
+        """Free-text claim reasons should be returned as-is."""
+        desc = get_claim_reason_description("Adding TypeScript AST parsing support")
+        assert desc == "Adding TypeScript AST parsing support"
 
-    def test_in_context_description(self):
-        """'in_context' should have a descriptive label."""
-        desc = get_claim_reason_description("in_context")
-        assert desc is not None
-        assert len(desc) > 0
-        assert "context" in desc.lower() or "memory" in desc.lower()
-
-    def test_dependency_description(self):
-        """'dependency' should have a descriptive label."""
-        desc = get_claim_reason_description("dependency")
-        assert desc is not None
-        assert len(desc) > 0
-
-    def test_unknown_reason_returns_itself(self):
-        """Unknown claim reasons should return the reason itself."""
-        desc = get_claim_reason_description("unknown_reason")
-        assert desc == "unknown_reason"
+    def test_short_text_returns_itself(self):
+        """Short descriptions should also pass through."""
+        desc = get_claim_reason_description("Fixing bug")
+        assert desc == "Fixing bug"
 
 
 class TestNodeStyles:

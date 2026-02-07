@@ -41,7 +41,7 @@ def render_agent_status(provider: DataProvider) -> None:
                 node = nodes.get(claim.node_id)
                 if node:
                     reason_desc = get_claim_reason_description(claim.claim_reason)
-                    claim_color = agent_colors.get(claim.claim_reason, base_color)
+                    claim_color = base_color
                     st.sidebar.markdown(
                         f"<span style='color: {claim_color};'>●</span> "
                         f"{node.name} <small>({reason_desc})</small>",
@@ -81,10 +81,10 @@ def render_demo_controls(provider: DataProvider) -> bool:
         format_func=lambda x: next(n[1] for n in node_options if n[0] == x)
     )
 
-    # Select claim reason
-    claim_reason = st.sidebar.selectbox(
-        "Claim Reason",
-        ["direct", "in_context", "dependency"]
+    # Enter claim reason (free-text description of planned work)
+    claim_reason = st.sidebar.text_input(
+        "What do you plan to do?",
+        placeholder="e.g. Refactoring error handling"
     )
 
     # Action buttons
@@ -111,17 +111,8 @@ def render_demo_controls(provider: DataProvider) -> bool:
 
 
 def render_legend() -> None:
-    """Render the color legend for claim reasons."""
+    """Render the color legend for agent colors."""
     st.sidebar.header("Legend")
-
-    st.sidebar.markdown("**Claim Intensity:**")
-    st.sidebar.markdown(
-        """
-        - 🔴 **Direct** - Actively editing
-        - 🟠 **In Context** - In agent's memory
-        - 🟡 **Dependency** - Related file
-        """
-    )
 
     st.sidebar.markdown("**Agent Colors:**")
     for agent_id, colors in AGENT_COLORS.items():

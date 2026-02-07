@@ -49,16 +49,12 @@ class Claim:
     """
     Represents an agent's claim on a node.
 
-    claim_reason values:
-    - "direct": Agent is actively editing this file/directory
-    - "in_context": Agent has this file in memory/context
-    - "dependency": File is a dependency of something being edited
-
-    These affect the color intensity in the visualization.
+    claim_reason is a free-text description of what the agent plans to do
+    with this file, e.g. "Refactoring error handling" or "Adding unit tests".
     """
     agent_id: str
     node_id: str
-    claim_reason: str  # direct, in_context, dependency
+    claim_reason: str  # Free-text description of planned work
     timestamp: Optional[str] = None
 
 

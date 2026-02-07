@@ -262,3 +262,65 @@ class Neo4jClient:
     async def _run_query(tx, cypher: str, codebase: str, limit: int) -> list[dict]:
         result = await tx.run(cypher, codebase=codebase, limit=limit)
         return [dict(record) async for record in result]
+
+    # ------------------------------------------------------------------
+    # messaging helpers
+    # ------------------------------------------------------------------
+
+    async def check_agent_exists(self, agent_name: str) -> dict | None:
+        """Return agent info dict if the Agent node exists, None otherwise."""
+        async with self._driver.session(database=self._database) as session:
+            return await session.execute_read(
+                self._run_check_agent_exists, agent_name
+            )
+
+    @staticmethod
+    async def _run_check_agent_exists(tx, agent_name: str) -> dict | None:
+        result = await tx.run(
+            queries.CHECK_AGENT_EXISTS, agent_name=agent_name
+        )
+        record = await result.single()
+        return dict(record) if record else None
+
+    async def send_message(self, to_agent: str, message_json: str) -> dict | None:
+        """Append a JSON-encoded message to the target agent's messages list."""
+        async with self._driver.session(database=self._database) as session:
+            return await session.execute_write(
+                self._run_send_message, to_agent, message_json
+            )
+
+    @staticmethod
+    async def _run_send_message(tx, to_agent: str, message_json: str) -> dict | None:
+        result = await tx.run(
+            queries.SEND_MESSAGE, to_agent=to_agent, message=message_json
+        )
+        record = await result.single()
+        return dict(record) if record else None
+
+    async def get_messages(self, agent_name: str) -> list[str]:
+        """Return the raw messages list (JSON strings) for an agent."""
+        async with self._driver.session(database=self._database) as session:
+            return await session.execute_read(
+                self._run_get_messages, agent_name
+            )
+
+    @staticmethod
+    async def _run_get_messages(tx, agent_name: str) -> list[str]:
+        result = await tx.run(
+            queries.GET_MESSAGES, agent_name=agent_name
+        )
+        record = await result.single()
+        if record:
+            return list(record["messages"])
+        return []
+
+    async def clear_messages(self, agent_name: str) -> None:
+        """Clear all messages for an agent."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_clear_messages, agent_name
+            )
+
+    @staticmethod
+    async def _run_clear_messages(tx, agent_name: str) -> None:
+        await tx.run(queries.CLEAR_MESSAGES, agent_name=agent_name)

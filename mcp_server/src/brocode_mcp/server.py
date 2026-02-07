@@ -13,9 +13,11 @@ startup via the lifespan and shared across all tool invocations.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import AsyncIterator
 
 from fastmcp import Context, FastMCP
@@ -77,6 +79,7 @@ mcp = FastMCP(
 VALID_NODE_TYPES = {"File", "Directory", "Codebase", "Class", "Function"}
 
 
+
 def _get_db(ctx: Context) -> Neo4jClient:
     """Extract the Neo4jClient from the FastMCP context.
 
@@ -119,12 +122,22 @@ async def brocode_claim_node(
         agent_model: Model type (e.g. "claude", "gemini").
         node_path: Relative path of the file or directory to claim (e.g. "src/app.py").
         codebase_name: Name of the codebase (matches the Codebase node's name property).
-        claim_reason: Optional description of why you are claiming this node.
+        claim_reason: A free-text description of what you plan to do with this file (e.g. "Changes to input parameters and return statement"). Required — cannot be empty.
 
     Returns:
         A dict with "status" ("claimed", "already_yours", "conflict", "error").
     """
     db: Neo4jClient = _get_db(ctx)
+
+    # Validate claim_reason is a non-empty description of planned work
+    if not claim_reason or not claim_reason.strip():
+        return {
+            "status": "error",
+            "message": (
+                "claim_reason is required. Describe what you plan to do "
+                "with this file (e.g. 'Changes to input parameters and return statement')."
+            ),
+        }
 
     # Step 1: Verify the node exists in the graph
     node = await db.check_node_exists(node_path, codebase_name)
@@ -241,8 +254,8 @@ async def brocode_release_node(
         "agent_name": agent_name,
     }
 
-    # Reindex the subtree: clear the old data in Neo4j, then re-run the
-    # indexer scoped to the released path and merge results back.
+    # Reindex: clear stale data from Neo4j, then re-run the indexer
+    # in-process so the graph reflects any filesystem changes the agent made.
     if not root_path:
         response["reindex_status"] = "skipped"
         response["reindex_message"] = (
@@ -255,36 +268,104 @@ async def brocode_release_node(
     await db.clear_subtree(node_path, codebase_name, is_directory)
     logger.info("Cleared subtree '%s' from graph", node_path)
 
-    # Step 2: Re-index from that path using repo-graph CLI.
-    # For a file, we re-index the parent directory to capture the file
-    # and its context. For a directory, we re-index the directory itself.
-    # We use the full repo root so edges to parent nodes are preserved,
-    # but only the subtree is re-written (MERGE is idempotent).
+    # Step 2: Re-index the subtree.  index_repository and Neo4jStore are
+    # synchronous, so we run them in a thread to avoid blocking the event loop.
+    # We scope the reindex to the released subtree (directory or file's parent)
+    # rather than re-indexing the entire repo.
     try:
-        proc = await asyncio.create_subprocess_exec(
-            sys.executable,
-            "-m",
-            "repo_graph.cli",
-            root_path,
-            "--analyze-python",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        reindex_msg = await asyncio.to_thread(
+            _reindex_sync, root_path, node_path, codebase_name, is_directory
         )
-        stdout, stderr = await proc.communicate()
-        if proc.returncode == 0:
-            response["reindex_status"] = "success"
-            response["reindex_message"] = stdout.decode().strip()
-        else:
-            response["reindex_status"] = "error"
-            response["reindex_message"] = stderr.decode().strip()
-    except FileNotFoundError:
+        response["reindex_status"] = "success"
+        response["reindex_message"] = reindex_msg
+    except Exception as exc:
+        logger.error("Reindex failed for '%s': %s", node_path, exc)
         response["reindex_status"] = "error"
-        response["reindex_message"] = (
-            "repo-graph CLI not found. Install it with: "
-            "pip install -e /path/to/repo-graph"
-        )
+        response["reindex_message"] = str(exc)
 
     return response
+
+
+def _reindex_sync(
+    root_path: str,
+    node_path: str,
+    codebase_name: str,
+    is_directory: bool,
+) -> str:
+    """Re-index the released subtree (called via asyncio.to_thread).
+
+    Scopes the reindex to just the released node's subtree:
+    - Directory release: indexes that directory
+    - File release: indexes the file's parent directory
+
+    The codebase name is preserved so nodes keep the correct ``codebase``
+    property and edges reconnect to the existing graph via MERGE.
+
+    Imports repo_graph inline so the MCP server only needs it installed
+    at reindex time, not at startup.
+    """
+    import os
+    from pathlib import Path
+
+    from repo_graph.indexer.filesystem import index_repository
+    from repo_graph.storage.neo4j_store import Neo4jStore
+
+    repo_root = Path(root_path)
+    if not repo_root.is_dir():
+        raise FileNotFoundError(f"Repo root '{root_path}' is not a directory")
+
+    # Determine the subtree to reindex
+    if is_directory:
+        subtree = repo_root / node_path
+    else:
+        # For a file, reindex its parent directory
+        subtree = repo_root / Path(node_path).parent
+        # If the file was at the repo root (no parent), reindex the repo root
+        if subtree == repo_root / ".":
+            subtree = repo_root
+
+    if not subtree.is_dir():
+        # Subtree was deleted from filesystem — nothing to reindex
+        return f"Subtree '{node_path}' no longer exists on disk, skipped reindex"
+
+    result = index_repository(subtree, analyze_python=True)
+
+    # Override the codebase name so nodes merge into the existing graph
+    # (index_repository would set it to subtree.name, e.g. "app" instead
+    # of "demo-api").
+    result.codebase.name = codebase_name
+    result.codebase.root_path = root_path
+    for d in result.directories:
+        d.path = str(Path(node_path if is_directory else str(Path(node_path).parent)) / d.path)
+    for f in result.files:
+        f.path = str(Path(node_path if is_directory else str(Path(node_path).parent)) / f.path)
+    for e in result.edges:
+        # Fix edge source/target paths — skip the codebase root reference
+        if e.source_path == subtree.name:
+            e.source_path = codebase_name
+        else:
+            prefix = node_path if is_directory else str(Path(node_path).parent)
+            if prefix and prefix != ".":
+                e.source_path = str(Path(prefix) / e.source_path)
+        # Target paths
+        if e.target_path != codebase_name:
+            prefix = node_path if is_directory else str(Path(node_path).parent)
+            if prefix and prefix != ".":
+                e.target_path = str(Path(prefix) / e.target_path)
+
+    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    user = os.environ.get("NEO4J_USERNAME", "neo4j")
+    password = os.environ.get("NEO4J_PASSWORD", "password")
+    database = os.environ.get("NEO4J_DATABASE", "neo4j")
+
+    with Neo4jStore(uri, user, password, database) as store:
+        store.save(result)
+
+    return (
+        f"Reindexed '{node_path}': "
+        f"{len(result.directories)} dirs, {len(result.files)} files, "
+        f"{len(result.functions)} functions, {len(result.classes)} classes"
+    )
 
 
 # ===================================================================
@@ -431,6 +512,147 @@ async def brocode_query_codebase(
         "count": len(nodes),
         "codebase": codebase_name,
         "nodes": nodes,
+    }
+
+
+# ===================================================================
+# Tool 5: brocode_send_message
+# ===================================================================
+
+
+@mcp.tool(
+    annotations={
+        "title": "Send a message to another agent",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    }
+)
+async def brocode_send_message(
+    from_agent: str,
+    to_agent: str,
+    message: str,
+    node_path: str = "",
+    ctx: Context = None,
+) -> dict:
+    """Send a message to another active agent.
+
+    Use this when another agent has claimed a node you need access to,
+    or to coordinate work. Messages are stored on the recipient's Agent
+    node and retrieved when they call brocode_get_messages.
+
+    Args:
+        from_agent: Your agent identifier (the sender).
+        to_agent: The recipient agent's name.
+        message: Free-text message content describing your request.
+        node_path: Optional path of the node this message is about.
+
+    Returns:
+        A dict with "status" ("sent", "error") and delivery info.
+    """
+    db: Neo4jClient = _get_db(ctx)
+
+    # Validate: no self-messaging
+    if from_agent == to_agent:
+        return {
+            "status": "error",
+            "message": "Cannot send a message to yourself.",
+        }
+
+    # Validate: message must be non-empty
+    if not message or not message.strip():
+        return {
+            "status": "error",
+            "message": "Message content is required and cannot be empty.",
+        }
+
+    # Validate: target agent must exist
+    agent = await db.check_agent_exists(to_agent)
+    if agent is None:
+        return {
+            "status": "error",
+            "message": f"Agent '{to_agent}' not found. Has it registered by claiming a node?",
+        }
+
+    # Build the message payload
+    msg_dict = {
+        "from": from_agent,
+        "content": message,
+        "node_path": node_path,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    msg_json = json.dumps(msg_dict)
+
+    result = await db.send_message(to_agent, msg_json)
+    if result is None:
+        return {"status": "error", "message": "Failed to deliver message (unexpected)."}
+
+    logger.info(
+        "Agent '%s' sent message to '%s' (re: '%s')",
+        from_agent,
+        to_agent,
+        node_path or "general",
+    )
+    return {
+        "status": "sent",
+        "to_agent": to_agent,
+        "message_count": result["message_count"],
+    }
+
+
+# ===================================================================
+# Tool 6: brocode_get_messages
+# ===================================================================
+
+
+@mcp.tool(
+    annotations={
+        "title": "Get messages for an agent",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    }
+)
+async def brocode_get_messages(
+    agent_name: str,
+    ctx: Context = None,
+) -> dict:
+    """Retrieve and clear messages for an agent (inbox model).
+
+    Call this periodically to check if other agents have sent you
+    messages (e.g., requesting access to a node you've claimed).
+    Messages are cleared after reading.
+
+    Args:
+        agent_name: Your agent identifier.
+
+    Returns:
+        A dict with "status", "messages" (list of parsed message dicts),
+        and "count".
+    """
+    db: Neo4jClient = _get_db(ctx)
+
+    raw_messages = await db.get_messages(agent_name)
+
+    # Parse JSON strings back to dicts
+    messages = []
+    for raw in raw_messages:
+        try:
+            messages.append(json.loads(raw))
+        except (json.JSONDecodeError, TypeError):
+            # Tolerate malformed entries — include raw string as content
+            messages.append({"from": "unknown", "content": raw, "node_path": "", "timestamp": ""})
+
+    # Clear inbox after reading (only if there were messages)
+    if messages:
+        await db.clear_messages(agent_name)
+
+    return {
+        "status": "ok",
+        "messages": messages,
+        "count": len(messages),
     }
 
 

@@ -186,13 +186,31 @@ class Neo4jStore:
                 )
 
             elif rel == "CALLS":
-                tx.run(
-                    "MATCH (caller:Function {file_path: $caller_file, name: $caller_name, codebase: $codebase}) "
-                    "MATCH (callee:Function {file_path: $callee_file, name: $callee_name, codebase: $codebase}) "
-                    "MERGE (caller)-[:CALLS]->(callee)",
-                    codebase=cb.name,
-                    caller_file=edge.source_path,
-                    caller_name=edge.source_label,
-                    callee_file=edge.target_path,
-                    callee_name=edge.target_label,
-                )
+                # source_label may be qualified ("ClassName.method") for methods
+                # but the Function node's name is just "method", so split it.
+                caller_label = edge.source_label
+                if "." in caller_label:
+                    caller_class, caller_method = caller_label.rsplit(".", 1)
+                    tx.run(
+                        "MATCH (caller:Function {file_path: $caller_file, name: $caller_name, "
+                        "       owner_class: $caller_class, codebase: $codebase}) "
+                        "MATCH (callee:Function {file_path: $callee_file, name: $callee_name, codebase: $codebase}) "
+                        "MERGE (caller)-[:CALLS]->(callee)",
+                        codebase=cb.name,
+                        caller_file=edge.source_path,
+                        caller_name=caller_method,
+                        caller_class=caller_class,
+                        callee_file=edge.target_path,
+                        callee_name=edge.target_label,
+                    )
+                else:
+                    tx.run(
+                        "MATCH (caller:Function {file_path: $caller_file, name: $caller_name, codebase: $codebase}) "
+                        "MATCH (callee:Function {file_path: $callee_file, name: $callee_name, codebase: $codebase}) "
+                        "MERGE (caller)-[:CALLS]->(callee)",
+                        codebase=cb.name,
+                        caller_file=edge.source_path,
+                        caller_name=caller_label,
+                        callee_file=edge.target_path,
+                        callee_name=edge.target_label,
+                    )
