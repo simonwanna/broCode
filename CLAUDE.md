@@ -15,7 +15,7 @@ A coordination layer using a Knowledge Graph (Neo4j) and Model Context Protocol 
 - **Claim** nodes (files/directories) they're working on
 - **Query** what other agents are currently working on
 - **Release** nodes when done, triggering re-indexing
-- **Analyze** the impact of modifications using static analysis to identify affected regions, even across other repositories
+- **Automatically claim** additional nodes using static analysis to lock the full impact region (including cross-repo dependencies), creating a safety net for files the agent might not know it's affecting
 
 ## Architecture
 
@@ -56,6 +56,7 @@ Demo UI showing real-time agent activity on the codebase graph. Claimed nodes li
 ```
 broCode/
 ├── CLAUDE.md          # This file
+├── CURRENT_STATE.md   # Current status and active tasks
 ├── project-skiss.md   # Original project specification
 ├── indexer/           # Automatic indexer (TODO)
 ├── mcp/               # MCP server implementation (TODO)
@@ -71,6 +72,29 @@ broCode/
 
 ### MCP Integration
 The MCP server must be accessible from both Claude and Gemini. Agents should be instructed (via CLAUDE.md/system prompts) to use the claim/release tools for every file interaction.
+
+## Agent Coding Standards (Critical)
+
+Since multiple agents collaborate on this repo, strict adherence to these standards is required to maintain shared context.
+
+1. **Test-Driven Development (TDD)**
+   - **Write tests first**: No code is written without a failing test.
+   - **Self-Documenting Tests**: Tests should clearly describe the expected behavior and edge cases, serving as executable documentation.
+
+2. **Context-Aware Comments**
+   - **Target Audience**: Write comments specifically for *other agents* who might pick up the task later.
+   - **Explain "Why"**: Focus on intent, design decisions, hidden dependencies, and potential side effects.
+   - **References**: explicitly link to related tickets, files, or constraints.
+
+3. **Documentation Maintenance**
+   - **Live Documentation**: If code behavior changes, `CLAUDE.md` and `CURRENT_STATE.md` MUST be updated immediately.
+   - **Minimal Updates**: Keep documentation updates focused on the specific change to avoid large, conflicting diffs.
+   - **State Tracking**: `CURRENT_STATE.md` is the source of truth for the project's current status.
+
+4. **Informative Change Messages**
+   - **Detail is Key**: Commit messages and pull request descriptions must be comprehensive to aid future agents.
+   - **Structure**: Clearly state *what* changed, *why* it changed, and *how* it affects the system.
+   - **Impact**: Explicitly mention if the change blocks or unblocks other tasks or requires specific testing.
 
 ## Demo Scenario
 
