@@ -79,21 +79,15 @@ broCode/
 ├── CURRENT_STATE.md   # Current status and active tasks
 ├── Skills.md          # Implementation patterns for agents
 ├── project-skiss.md   # Original project specification
-<<<<<<< Updated upstream
-├── repo-graph/        # Indexer implementation
-├── mcp/               # MCP server implementation (TODO)
+├── repo-graph/        # Automatic indexer (complete)
+├── mcp_server/        # MCP server — FastMCP + async Neo4j (complete)
 └── ui/                # Streamlit visualization
     ├── app.py         # Main Streamlit entry point
     ├── config.py      # Colors, styling, settings
-    ├── requirements.txt
     ├── components/    # UI components (graph, sidebar)
-    └── data/          # Data layer (mock + Neo4j abstraction)
-        └── mock_data.json  # Mock codebase for demos
-=======
-├── repo-graph/        # Automatic indexer (complete)
-├── mcp_server/        # MCP server — FastMCP + async Neo4j (complete)
-└── ui/                # Streamlit visualization (TODO)
->>>>>>> Stashed changes
+    ├── data/          # Data layer (mock + Neo4j abstraction)
+    │   └── mock_data.json  # Mock codebase for demos
+    └── tests/         # 45 tests for data provider + config
 ```
 
 ## Development Guidelines
@@ -146,11 +140,8 @@ Since multiple agents collaborate on this repo, strict adherence to these standa
 
 ### Installation
 ```bash
-# 1. Install the indexer
-cd repo-graph && pip install -e ".[dev]"
-
-# 2. Install the MCP server
-cd mcp_server && pip install -e ".[dev]"
+# 1. Install dependencies
+uv sync --all-extras
 
 # 3. Set Neo4j credentials (or create a .env file)
 export NEO4J_URI="bolt://localhost:7687"
@@ -164,29 +155,26 @@ export NEO4J_DATABASE="neo4j"
 # Add the MCP server to Claude Code
 claude mcp add brocode \
   --scope project \
-  -- python -m brocode_mcp.server
+  -- uv run brocode-mcp
 ```
 
 ## Commands
 
 ```bash
-<<<<<<< Updated upstream
-# UI (from repo root)
-pip install -r ui/requirements.txt  # Install UI dependencies
-streamlit run ui/app.py             # Start visualization UI
+# Install dependencies (from repo root)
+uv sync --all-extras
 
-# TODO: Add other commands once implemented
-# python -m repo_graph index .      # Re-index the codebase
-# python -m mcp_server              # Start MCP server
-=======
+# UI
+uv run streamlit run ui/app.py
+
 # Index a repository into Neo4j
-repo-graph /path/to/repo --analyze-python
+uv run repo-graph /path/to/repo --analyze-python
 
 # Run the MCP server (stdio)
-brocode-mcp
+uv run brocode-mcp
 
-# Run tests
-cd repo-graph && pytest tests/ -v
-cd mcp_server && pytest tests/ -v
->>>>>>> Stashed changes
+# Run all tests
+uv run pytest ui/tests/ -v
+uv run pytest repo-graph/tests/ -v
+uv run pytest mcp_server/tests/ -v
 ```
