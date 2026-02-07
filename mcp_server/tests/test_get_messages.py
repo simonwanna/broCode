@@ -1,6 +1,7 @@
 """Tests for the brocode_get_messages tool.
 
-Covers: retrieving parsed messages, empty inbox, clearing after read.
+Covers: retrieving parsed messages, empty inbox. Messages are read-only —
+clearing is done via a separate brocode_clear_messages tool.
 """
 
 from __future__ import annotations
@@ -63,13 +64,11 @@ async def test_get_messages_empty_inbox(mock_db, mock_ctx):
     assert result["status"] == "ok"
     assert result["count"] == 0
     assert result["messages"] == []
-    # Should not try to clear an already-empty inbox
-    mock_db.clear_messages.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_get_messages_clears_after_reading(mock_db, mock_ctx):
-    """Messages should be cleared after reading (inbox model)."""
+async def test_get_messages_does_not_clear(mock_db, mock_ctx):
+    """get_messages should NOT clear messages — that's a separate tool."""
     mock_db.get_messages.return_value = [
         json.dumps({"from": "gemini-1", "content": "Hello", "node_path": "", "timestamp": "2026-02-07T12:30:00Z"}),
     ]
@@ -79,4 +78,4 @@ async def test_get_messages_clears_after_reading(mock_db, mock_ctx):
         ctx=mock_ctx,
     )
 
-    mock_db.clear_messages.assert_awaited_once_with("claude-1")
+    mock_db.clear_messages.assert_not_awaited()

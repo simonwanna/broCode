@@ -46,41 +46,133 @@ RETURN labels(n) AS labels, coalesce(n.path, n.name) AS path, n.name AS name
 
 # ===== RELEASE NODE =====
 
-# Remove a CLAIM relationship between a specific agent and a node,
-# and return the Codebase root_path so the caller can resolve the
-# absolute filesystem path for reindexing.
+# Remove a CLAIM relationship between a specific agent and a node.
+# No longer returns root_path — reindexing is handled separately
+# by brocode_update_graph.
 RELEASE_CLAIM = """
 MATCH (a:Agent {name: $agent_name})-[c:CLAIM]->(n)
 WHERE (n:Codebase AND n.name = $codebase AND $node_path = $codebase)
    OR ((n:File OR n:Directory) AND n.path = $node_path AND n.codebase = $codebase)
 DELETE c
-WITH a, n
-OPTIONAL MATCH (cb:Codebase {name: $codebase})
 RETURN a.name AS agent_name, labels(n) AS labels,
-       coalesce(n.path, n.name) AS path, cb.root_path AS root_path
+       coalesce(n.path, n.name) AS path
 """
 
-# ===== REINDEX SUBTREE =====
+# ===== GRAPH UPDATE: UPSERT =====
 
-# Delete a Directory node and all nodes reachable below it (child dirs,
-# files, and their AST children like Class/Function), then remove
-# dangling relationships.  Preserves CLAIM edges on the directory itself
-# (those are deleted separately by RELEASE_CLAIM).
-CLEAR_SUBTREE_DIR = """
-MATCH (d:Directory {path: $node_path, codebase: $codebase})
+# Upsert a File node. MERGE on (path, codebase) for idempotency.
+# When parent_path is non-empty, links to parent Directory via CONTAINS_FILE.
+# When parent_path is empty (root-level file), links to the Codebase node.
+UPSERT_FILE = """
+MERGE (f:File {path: $path, codebase: $codebase})
+SET f.name = $name, f.extension = $extension, f.size_bytes = $size_bytes
+WITH f
+CALL {
+    WITH f
+    WITH f WHERE $parent_path <> ''
+    MATCH (d:Directory {path: $parent_path, codebase: $codebase})
+    MERGE (d)-[:CONTAINS_FILE]->(f)
+}
+CALL {
+    WITH f
+    WITH f WHERE $parent_path = ''
+    MATCH (cb:Codebase {name: $codebase})
+    MERGE (cb)-[:CONTAINS_FILE]->(f)
+}
+RETURN f.path AS path
+"""
+
+# Upsert a Directory node. MERGE on (path, codebase) for idempotency.
+# When parent_path is non-empty, links to parent Directory via CONTAINS_DIR.
+# When parent_path is empty (top-level dir), links to the Codebase node.
+UPSERT_DIRECTORY = """
+MERGE (d:Directory {path: $path, codebase: $codebase})
+SET d.name = $name, d.depth = $depth
+WITH d
+CALL {
+    WITH d
+    WITH d WHERE $parent_path <> ''
+    MATCH (parent:Directory {path: $parent_path, codebase: $codebase})
+    MERGE (parent)-[:CONTAINS_DIR]->(d)
+}
+CALL {
+    WITH d
+    WITH d WHERE $parent_path = ''
+    MATCH (cb:Codebase {name: $codebase})
+    MERGE (cb)-[:CONTAINS_DIR]->(d)
+}
+RETURN d.path AS path
+"""
+
+# Upsert a Function node. MERGE on (file_path, name, codebase) for idempotency.
+# Links to parent File via DEFINES_FUNCTION edge (when File exists).
+# If the function is a method (owner_class is set), also creates HAS_METHOD
+# edge from the Class node to the Function.
+UPSERT_FUNCTION = """
+MERGE (fn:Function {file_path: $file_path, name: $name, codebase: $codebase})
+SET fn.line_number = $line_number, fn.is_method = $is_method,
+    fn.parameters = $parameters, fn.owner_class = $owner_class
+WITH fn
+OPTIONAL MATCH (f:File {path: $file_path, codebase: $codebase})
+FOREACH (_ IN CASE WHEN f IS NOT NULL THEN [1] ELSE [] END |
+    MERGE (f)-[:DEFINES_FUNCTION]->(fn)
+)
+WITH fn
+CALL {
+    WITH fn
+    WITH fn WHERE $owner_class <> ''
+    MATCH (cls:Class {file_path: $file_path, name: $owner_class, codebase: $codebase})
+    MERGE (cls)-[:HAS_METHOD]->(fn)
+}
+RETURN fn.name AS name
+"""
+
+# Upsert a Class node. MERGE on (file_path, name, codebase) for idempotency.
+# Links to parent File via DEFINES_CLASS edge (when File exists).
+UPSERT_CLASS = """
+MERGE (c:Class {file_path: $file_path, name: $name, codebase: $codebase})
+SET c.line_number = $line_number, c.base_classes = $base_classes
+WITH c
+OPTIONAL MATCH (f:File {path: $file_path, codebase: $codebase})
+FOREACH (_ IN CASE WHEN f IS NOT NULL THEN [1] ELSE [] END |
+    MERGE (f)-[:DEFINES_CLASS]->(c)
+)
+RETURN c.name AS name
+"""
+
+# ===== GRAPH UPDATE: DELETE =====
+
+# Delete a File node and its AST children (Function, Class).
+DELETE_FILE = """
+MATCH (f:File {path: $path, codebase: $codebase})
+OPTIONAL MATCH (f)-[*]->(child)
+DETACH DELETE child
+WITH f
+DETACH DELETE f
+"""
+
+# Delete a Directory node and all nodes reachable below it.
+DELETE_DIRECTORY = """
+MATCH (d:Directory {path: $path, codebase: $codebase})
 OPTIONAL MATCH (d)-[*]->(descendant)
 DETACH DELETE descendant
 WITH d
 DETACH DELETE d
 """
 
-# Delete a single File node and its AST children (Function, Class).
-CLEAR_SUBTREE_FILE = """
-MATCH (f:File {path: $node_path, codebase: $codebase})
-OPTIONAL MATCH (f)-[*]->(child)
-DETACH DELETE child
-WITH f
-DETACH DELETE f
+# Delete a specific Function node.
+DELETE_FUNCTION = """
+MATCH (fn:Function {file_path: $file_path, name: $name, codebase: $codebase})
+DETACH DELETE fn
+"""
+
+# Delete a Class node and its methods (Functions with owner_class matching).
+DELETE_CLASS = """
+MATCH (c:Class {file_path: $file_path, name: $name, codebase: $codebase})
+OPTIONAL MATCH (fn:Function {file_path: $file_path, owner_class: $name, codebase: $codebase})
+DETACH DELETE fn
+WITH c
+DETACH DELETE c
 """
 
 # ===== GET ACTIVE AGENTS =====
@@ -137,9 +229,10 @@ LIMIT 1
 
 # Append a JSON-encoded message string to the target agent's messages list.
 # Uses coalesce to initialize the list if it doesn't exist yet.
+# Wraps $message in a list so Neo4j appends a single element (not char-by-char).
 SEND_MESSAGE = """
 MATCH (a:Agent {name: $to_agent})
-SET a.messages = coalesce(a.messages, []) + $message
+SET a.messages = coalesce(a.messages, []) + [$message]
 RETURN size(a.messages) AS message_count
 """
 
@@ -149,8 +242,23 @@ MATCH (a:Agent {name: $agent_name})
 RETURN coalesce(a.messages, []) AS messages
 """
 
-# Clear all messages for an agent (inbox model — read then clear).
+# Clear all messages for an agent after reading.
 CLEAR_MESSAGES = """
 MATCH (a:Agent {name: $agent_name})
 SET a.messages = []
+"""
+
+# ===== AGENT CLEANUP =====
+
+# Count remaining CLAIM relationships for an agent.
+# Used after release to decide whether to delete the Agent node.
+COUNT_AGENT_CLAIMS = """
+MATCH (a:Agent {name: $agent_name})-[c:CLAIM]->()
+RETURN count(c) AS claim_count
+"""
+
+# Delete an Agent node (only called when it has no remaining claims).
+DELETE_AGENT = """
+MATCH (a:Agent {name: $agent_name})
+DETACH DELETE a
 """

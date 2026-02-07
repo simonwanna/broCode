@@ -136,46 +136,171 @@ class Neo4jClient:
         return dict(record) if record else None
 
     # ------------------------------------------------------------------
-    # reindex_subtree helpers
+    # graph update helpers (upsert / delete)
     # ------------------------------------------------------------------
 
-    async def clear_subtree(
-        self, node_path: str, codebase: str, is_directory: bool
+    async def upsert_file(
+        self,
+        codebase: str,
+        path: str,
+        name: str,
+        extension: str,
+        size_bytes: int,
+        parent_path: str,
     ) -> None:
-        """Delete a node and everything below it from the graph.
-
-        For a Directory: removes the dir, all descendant dirs/files, and their
-        AST children (Function, Class nodes).
-        For a File: removes the file and its AST children.
-        """
-        query = (
-            queries.CLEAR_SUBTREE_DIR if is_directory else queries.CLEAR_SUBTREE_FILE
-        )
+        """Upsert a File node and optionally link to parent Directory."""
         async with self._driver.session(database=self._database) as session:
             await session.execute_write(
-                self._run_clear_subtree, query, node_path, codebase
+                self._run_upsert_file, codebase, path, name, extension,
+                size_bytes, parent_path,
             )
 
     @staticmethod
-    async def _run_clear_subtree(
-        tx, query: str, node_path: str, codebase: str
+    async def _run_upsert_file(
+        tx, codebase: str, path: str, name: str, extension: str,
+        size_bytes: int, parent_path: str,
     ) -> None:
-        await tx.run(query, node_path=node_path, codebase=codebase)
+        await tx.run(
+            queries.UPSERT_FILE,
+            codebase=codebase, path=path, name=name,
+            extension=extension, size_bytes=size_bytes,
+            parent_path=parent_path,
+        )
 
-    async def write_index_result(self, result: dict) -> None:
-        """Write an IndexResult-shaped dict to Neo4j.
+    async def upsert_directory(
+        self,
+        codebase: str,
+        path: str,
+        name: str,
+        depth: int,
+        parent_path: str,
+    ) -> None:
+        """Upsert a Directory node and optionally link to parent Directory."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_upsert_directory, codebase, path, name, depth,
+                parent_path,
+            )
 
-        Accepts the serialized output from the repo-graph indexer subprocess.
-        Uses MERGE statements so this is safe to call on an existing graph —
-        nodes that already exist are updated rather than duplicated.
+    @staticmethod
+    async def _run_upsert_directory(
+        tx, codebase: str, path: str, name: str, depth: int,
+        parent_path: str,
+    ) -> None:
+        await tx.run(
+            queries.UPSERT_DIRECTORY,
+            codebase=codebase, path=path, name=name,
+            depth=depth, parent_path=parent_path,
+        )
 
-        This is intentionally a thin pass-through to the repo-graph CLI
-        subprocess rather than reimplementing all the Cypher from neo4j_store.py.
-        See reindex_subtree() in server.py for the orchestration.
-        """
-        # This method exists as a placeholder for future direct-write support.
-        # Currently, reindexing is handled by shelling out to repo-graph CLI.
-        pass
+    async def upsert_function(
+        self,
+        codebase: str,
+        file_path: str,
+        name: str,
+        line_number: int,
+        is_method: bool,
+        parameters: str,
+        owner_class: str,
+    ) -> None:
+        """Upsert a Function node and link to parent File."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_upsert_function, codebase, file_path, name,
+                line_number, is_method, parameters, owner_class,
+            )
+
+    @staticmethod
+    async def _run_upsert_function(
+        tx, codebase: str, file_path: str, name: str, line_number: int,
+        is_method: bool, parameters: str, owner_class: str,
+    ) -> None:
+        await tx.run(
+            queries.UPSERT_FUNCTION,
+            codebase=codebase, file_path=file_path, name=name,
+            line_number=line_number, is_method=is_method,
+            parameters=parameters, owner_class=owner_class,
+        )
+
+    async def upsert_class(
+        self,
+        codebase: str,
+        file_path: str,
+        name: str,
+        line_number: int,
+        base_classes: str,
+    ) -> None:
+        """Upsert a Class node and link to parent File."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_upsert_class, codebase, file_path, name,
+                line_number, base_classes,
+            )
+
+    @staticmethod
+    async def _run_upsert_class(
+        tx, codebase: str, file_path: str, name: str, line_number: int,
+        base_classes: str,
+    ) -> None:
+        await tx.run(
+            queries.UPSERT_CLASS,
+            codebase=codebase, file_path=file_path, name=name,
+            line_number=line_number, base_classes=base_classes,
+        )
+
+    async def delete_file(self, path: str, codebase: str) -> None:
+        """Delete a File node and its AST children."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_delete_file, path, codebase,
+            )
+
+    @staticmethod
+    async def _run_delete_file(tx, path: str, codebase: str) -> None:
+        await tx.run(queries.DELETE_FILE, path=path, codebase=codebase)
+
+    async def delete_directory(self, path: str, codebase: str) -> None:
+        """Delete a Directory node and all descendants."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_delete_directory, path, codebase,
+            )
+
+    @staticmethod
+    async def _run_delete_directory(tx, path: str, codebase: str) -> None:
+        await tx.run(queries.DELETE_DIRECTORY, path=path, codebase=codebase)
+
+    async def delete_function(self, file_path: str, name: str, codebase: str) -> None:
+        """Delete a specific Function node."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_delete_function, file_path, name, codebase,
+            )
+
+    @staticmethod
+    async def _run_delete_function(
+        tx, file_path: str, name: str, codebase: str
+    ) -> None:
+        await tx.run(
+            queries.DELETE_FUNCTION,
+            file_path=file_path, name=name, codebase=codebase,
+        )
+
+    async def delete_class(self, file_path: str, name: str, codebase: str) -> None:
+        """Delete a Class node and its methods."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_delete_class, file_path, name, codebase,
+            )
+
+    @staticmethod
+    async def _run_delete_class(
+        tx, file_path: str, name: str, codebase: str
+    ) -> None:
+        await tx.run(
+            queries.DELETE_CLASS,
+            file_path=file_path, name=name, codebase=codebase,
+        )
 
     # ------------------------------------------------------------------
     # get_active_agents helpers
@@ -324,3 +449,33 @@ class Neo4jClient:
     @staticmethod
     async def _run_clear_messages(tx, agent_name: str) -> None:
         await tx.run(queries.CLEAR_MESSAGES, agent_name=agent_name)
+
+    # ------------------------------------------------------------------
+    # agent cleanup helpers
+    # ------------------------------------------------------------------
+
+    async def count_agent_claims(self, agent_name: str) -> int:
+        """Return the number of remaining CLAIM relationships for an agent."""
+        async with self._driver.session(database=self._database) as session:
+            return await session.execute_read(
+                self._run_count_agent_claims, agent_name
+            )
+
+    @staticmethod
+    async def _run_count_agent_claims(tx, agent_name: str) -> int:
+        result = await tx.run(
+            queries.COUNT_AGENT_CLAIMS, agent_name=agent_name
+        )
+        record = await result.single()
+        return record["claim_count"] if record else 0
+
+    async def delete_agent(self, agent_name: str) -> None:
+        """Delete an Agent node and all its relationships."""
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(
+                self._run_delete_agent, agent_name
+            )
+
+    @staticmethod
+    async def _run_delete_agent(tx, agent_name: str) -> None:
+        await tx.run(queries.DELETE_AGENT, agent_name=agent_name)

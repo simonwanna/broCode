@@ -47,6 +47,18 @@ def mock_db() -> AsyncMock:
     db.send_message.return_value = {"message_count": 1}
     db.get_messages.return_value = []
     db.clear_messages.return_value = None
+    # Agent cleanup defaults
+    db.count_agent_claims.return_value = 0
+    db.delete_agent.return_value = None
+    # Graph update (upsert/delete) defaults — all return None (void)
+    db.upsert_file.return_value = None
+    db.upsert_directory.return_value = None
+    db.upsert_function.return_value = None
+    db.upsert_class.return_value = None
+    db.delete_file.return_value = None
+    db.delete_directory.return_value = None
+    db.delete_function.return_value = None
+    db.delete_class.return_value = None
     return db
 
 

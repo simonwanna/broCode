@@ -1,10 +1,12 @@
 """broCode MCP Server — multi-agent codebase coordination.
 
-Provides four tools for AI agents to coordinate work on shared codebases:
+Provides tools for AI agents to coordinate work on shared codebases:
 - brocode_claim_node: Claim a file/directory you're working on
-- brocode_release_node: Release a claimed node (optionally re-index)
+- brocode_release_node: Release a claimed node
+- brocode_update_graph: Apply per-node graph updates (upsert/delete)
 - brocode_get_active_agents: See who is working where
 - brocode_query_codebase: Search the codebase graph structure
+- brocode_send_message / brocode_get_messages / brocode_clear_messages
 
 Runs via stdio transport. The Neo4j async driver is initialized once at
 startup via the lifespan and shared across all tool invocations.
@@ -12,9 +14,9 @@ startup via the lifespan and shared across all tool invocations.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -78,6 +80,312 @@ mcp = FastMCP(
 # Valid node types for query filtering — also used by neo4j_client.py
 VALID_NODE_TYPES = {"File", "Directory", "Codebase", "Class", "Function"}
 
+
+# ===================================================================
+# MCP Resources — static reference documents for agents
+# ===================================================================
+
+
+@mcp.resource("brocode://agent-workflow")
+def agent_workflow() -> str:
+    """Standard workflow for agents using brocode."""
+    return """\
+# broCode Agent Workflow
+
+Follow this lifecycle every time you work on a codebase managed by broCode.
+
+## Step-by-step
+
+1. **Check activity** — Call `brocode_get_active_agents` to see which agents
+   are working where. This avoids conflicts before you even start.
+
+2. **Explore the graph** — Call `brocode_query_codebase` to find the node(s)
+   you need. Use `path_filter` globs and `node_type` to narrow results.
+
+3. **Claim before editing** — Call `brocode_claim_node` for every file or
+   directory you intend to modify. Handle responses:
+   - `claimed` — you now own the node; proceed.
+   - `already_yours` — you already claimed it; proceed.
+   - `conflict` — another agent owns it. Use `brocode_send_message` to
+     negotiate, or pick a different file.
+
+4. **Do your work** — Edit files, run tests, etc.
+
+5. **Update the graph** — If you created, renamed, or deleted files,
+   functions, or classes, call `brocode_update_graph` so the knowledge graph
+   stays in sync. See the `brocode://update-graph-examples` resource for
+   concrete JSON payloads.
+
+6. **Release when done** — Call `brocode_release_node` for each node you
+   claimed. The Agent node is automatically deleted when its last claim is
+   released.
+
+## Key rules
+
+- **Always claim before editing.** Other agents rely on claims to avoid
+  conflicts.
+- **Always update the graph** if you changed files. Stale graphs cause
+  confusion for the next agent.
+- **Check for conflicts** before claiming — `brocode_get_active_agents` is
+  cheap and saves time.
+- **Poll messages** periodically while holding claims — another agent may
+  need access. Use `brocode_get_messages` and `brocode_clear_messages`.
+"""
+
+
+@mcp.resource("brocode://graph-schema")
+def graph_schema() -> str:
+    """Node types, properties, and relationships in the brocode graph."""
+    return """\
+# broCode Graph Schema
+
+## Node types and properties
+
+### Codebase
+- `name` — unique identifier (e.g. "broCode")
+- `root_path` — absolute path on disk
+
+### Directory
+- `path` — relative path (e.g. "src/utils")
+- `name` — directory name
+- `depth` — nesting level from root
+- `codebase` — owning codebase name
+
+### File
+- `path` — relative path (e.g. "src/app.py")
+- `name` — file name
+- `extension` — e.g. ".py"
+- `size_bytes` — file size
+- `codebase` — owning codebase name
+
+### Function
+- `file_path` — path of the containing file
+- `name` — function name
+- `line_number` — line where the function is defined
+- `is_method` — true if it belongs to a class
+- `parameters` — parameter signature string
+- `owner_class` — class name (if is_method is true)
+- `codebase` — owning codebase name
+
+### Class
+- `file_path` — path of the containing file
+- `name` — class name
+- `line_number` — line where the class is defined
+- `base_classes` — comma-separated base class names
+- `codebase` — owning codebase name
+
+### Agent
+- `name` — unique agent identifier (e.g. "claude-session-1")
+- `model` — model type (e.g. "claude", "gemini")
+- `messages` — JSON array of inbox messages
+
+## Relationships
+
+```
+(Codebase)-[:CONTAINS_DIR]->(Directory)       # top-level dirs
+(Codebase)-[:CONTAINS_FILE]->(File)           # root-level files
+(Directory)-[:CONTAINS_DIR]->(Directory)      # nested dirs
+(Directory)-[:CONTAINS_FILE]->(File)          # files in dir
+(File)-[:DEFINES_FUNCTION]->(Function)        # standalone functions
+(File)-[:DEFINES_CLASS]->(Class)              # class definitions
+(Class)-[:HAS_METHOD]->(Function)             # methods on a class
+(Agent)-[:CLAIM {claim_reason}]->(node)       # node = Codebase|Directory|File
+```
+
+The `CLAIM` relationship carries a `claim_reason` property describing the
+agent's planned work.
+"""
+
+
+@mcp.resource("brocode://update-graph-examples")
+def update_graph_examples() -> str:
+    """Concrete JSON examples for brocode_update_graph."""
+    return """\
+# brocode_update_graph — Examples
+
+All examples show the `changes` parameter passed to `brocode_update_graph`.
+
+## Upsert a file
+
+```json
+[{"action": "upsert", "node_type": "File", "path": "src/utils/helpers.py"}]
+```
+
+With optional fields:
+```json
+[{
+  "action": "upsert",
+  "node_type": "File",
+  "path": "src/utils/helpers.py",
+  "name": "helpers.py",
+  "extension": ".py",
+  "size_bytes": 1234,
+  "parent_path": "src/utils"
+}]
+```
+
+## Upsert a directory
+
+```json
+[{"action": "upsert", "node_type": "Directory", "path": "src/utils"}]
+```
+
+With optional fields:
+```json
+[{
+  "action": "upsert",
+  "node_type": "Directory",
+  "path": "src/utils",
+  "name": "utils",
+  "depth": 2,
+  "parent_path": "src"
+}]
+```
+
+## Upsert a function (standalone)
+
+```json
+[{
+  "action": "upsert",
+  "node_type": "Function",
+  "file_path": "src/app.py",
+  "function_name": "handle_request",
+  "line_number": 42,
+  "is_method": false,
+  "parameters": "request, timeout=30"
+}]
+```
+
+## Upsert a method (belongs to a class)
+
+```json
+[{
+  "action": "upsert",
+  "node_type": "Function",
+  "file_path": "src/app.py",
+  "function_name": "process",
+  "line_number": 55,
+  "is_method": true,
+  "parameters": "self, data",
+  "owner_class": "RequestHandler"
+}]
+```
+
+## Upsert a class
+
+```json
+[{
+  "action": "upsert",
+  "node_type": "Class",
+  "file_path": "src/app.py",
+  "class_name": "RequestHandler",
+  "line_number": 10,
+  "base_classes": "BaseHandler, LoggingMixin"
+}]
+```
+
+## Delete a file
+
+```json
+[{"action": "delete", "node_type": "File", "path": "src/old_module.py"}]
+```
+
+## Delete a directory
+
+```json
+[{"action": "delete", "node_type": "Directory", "path": "src/deprecated"}]
+```
+
+## Delete a function
+
+```json
+[{"action": "delete", "node_type": "Function", "file_path": "src/app.py", "function_name": "old_handler"}]
+```
+
+## Delete a class
+
+```json
+[{"action": "delete", "node_type": "Class", "file_path": "src/app.py", "class_name": "LegacyHandler"}]
+```
+
+## Batch: multiple changes in one call
+
+```json
+[
+  {"action": "upsert", "node_type": "Directory", "path": "src/new_pkg"},
+  {"action": "upsert", "node_type": "File", "path": "src/new_pkg/__init__.py"},
+  {"action": "upsert", "node_type": "File", "path": "src/new_pkg/core.py"},
+  {"action": "upsert", "node_type": "Class", "file_path": "src/new_pkg/core.py", "class_name": "Engine", "line_number": 1},
+  {"action": "delete", "node_type": "File", "path": "src/old_module.py"}
+]
+```
+
+## Partial failure response
+
+If some changes succeed and others fail, you get status `"partial"`:
+
+```json
+{
+  "status": "partial",
+  "applied": 3,
+  "errors": ["Change 2: missing required field 'path' for upsert File."]
+}
+```
+"""
+
+
+@mcp.resource("brocode://messaging")
+def messaging_protocol() -> str:
+    """When and how to use the brocode messaging tools."""
+    return """\
+# broCode Messaging Protocol
+
+Agents can send messages to each other via the Agent node's inbox.
+This is useful for negotiating access to claimed nodes.
+
+## Tools
+
+### brocode_send_message
+Send a message to another agent.
+
+Parameters:
+- `from_agent` — your agent identifier
+- `to_agent` — the recipient's agent identifier
+- `message` — free-text content describing your request
+- `node_path` (optional) — the node the message is about
+
+### brocode_get_messages
+Retrieve your inbox. Returns a list of message dicts, each with:
+- `from` — sender agent name
+- `content` — message text
+- `node_path` — related node (may be empty)
+- `timestamp` — ISO 8601 UTC timestamp
+
+### brocode_clear_messages
+Clear your inbox after processing messages. Safe to call on an empty inbox.
+
+## Conventions
+
+- **Include `node_path`** when your message is about a specific file or
+  directory. This helps the recipient understand the context without
+  guessing.
+- **No self-messaging** — `from_agent` and `to_agent` must differ.
+- **Poll periodically** — while you hold claims, call `brocode_get_messages`
+  every few steps so you notice requests promptly.
+- **Clear after reading** — call `brocode_clear_messages` once you have
+  processed your inbox to keep it clean.
+
+## Typical flow
+
+1. You try to claim `src/app.py` but get a `conflict` — agent "gemini-1"
+   owns it.
+2. Call `brocode_send_message(from_agent="claude-1", to_agent="gemini-1",
+   message="I need to update the import block in src/app.py — can you
+   release it when you're done?", node_path="src/app.py")`.
+3. Continue working on other files.
+4. Later, call `brocode_get_messages` to check if gemini-1 responded.
+5. Once gemini-1 releases the node, claim it and proceed.
+"""
 
 
 def _get_db(ctx: Context) -> Neo4jClient:
@@ -198,9 +506,9 @@ async def brocode_claim_node(
 
 @mcp.tool(
     annotations={
-        "title": "Release a claimed node and reindex",
+        "title": "Release a claimed node",
         "readOnlyHint": False,
-        "destructiveHint": True,
+        "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": False,
     }
@@ -211,14 +519,13 @@ async def brocode_release_node(
     codebase_name: str,
     ctx: Context = None,
 ) -> dict:
-    """Release a file or directory you previously claimed and reindex it.
+    """Release a file or directory you previously claimed.
 
-    Call this when you're done working on a node. The subtree rooted at
-    node_path is cleared from the graph and re-indexed from the filesystem
-    so the graph reflects any changes you made.
+    Call this when you're done working on a node. The claim is removed
+    so other agents can work on it. If you changed the file, use
+    brocode_update_graph to update the graph before or after releasing.
 
-    The repo root path is resolved automatically from the Codebase node's
-    root_path property (set during initial indexing).
+    The Agent node is automatically deleted when it has no remaining claims.
 
     Args:
         agent_name: Your agent identifier.
@@ -226,7 +533,7 @@ async def brocode_release_node(
         codebase_name: Name of the codebase.
 
     Returns:
-        A dict with "status" ("released", "not_found") and reindex info.
+        A dict with "status" ("released", "not_found") and release info.
     """
     db: Neo4jClient = _get_db(ctx)
 
@@ -237,139 +544,213 @@ async def brocode_release_node(
             "message": f"No claim by '{agent_name}' on '{node_path}' was found.",
         }
 
-    node_labels = result.get("labels", [])
-    root_path = result.get("root_path", "")
-    is_directory = "Directory" in node_labels
-
     logger.info(
         "Agent '%s' released node '%s' in codebase '%s'",
         agent_name,
         node_path,
         codebase_name,
     )
-    response: dict = {
+
+    # Clean up Agent node if it has no remaining claims
+    remaining = await db.count_agent_claims(agent_name)
+    if remaining == 0:
+        await db.delete_agent(agent_name)
+        logger.info("Deleted Agent node '%s' (no remaining claims)", agent_name)
+
+    return {
         "status": "released",
         "message": f"Released '{node_path}'.",
         "node_path": node_path,
         "agent_name": agent_name,
     }
 
-    # Reindex: clear stale data from Neo4j, then re-run the indexer
-    # in-process so the graph reflects any filesystem changes the agent made.
-    if not root_path:
-        response["reindex_status"] = "skipped"
-        response["reindex_message"] = (
-            "Codebase root_path not found in graph. "
-            "Re-run the full indexer to set it."
-        )
-        return response
 
-    # Step 1: Clear the subtree from Neo4j
-    await db.clear_subtree(node_path, codebase_name, is_directory)
-    logger.info("Cleared subtree '%s' from graph", node_path)
-
-    # Step 2: Re-index the subtree.  index_repository and Neo4jStore are
-    # synchronous, so we run them in a thread to avoid blocking the event loop.
-    # We scope the reindex to the released subtree (directory or file's parent)
-    # rather than re-indexing the entire repo.
-    try:
-        reindex_msg = await asyncio.to_thread(
-            _reindex_sync, root_path, node_path, codebase_name, is_directory
-        )
-        response["reindex_status"] = "success"
-        response["reindex_message"] = reindex_msg
-    except Exception as exc:
-        logger.error("Reindex failed for '%s': %s", node_path, exc)
-        response["reindex_status"] = "error"
-        response["reindex_message"] = str(exc)
-
-    return response
+# ===================================================================
+# Tool 3: brocode_update_graph
+# ===================================================================
 
 
-def _reindex_sync(
-    root_path: str,
-    node_path: str,
+# Valid node types that brocode_update_graph accepts for changes.
+_UPDATE_NODE_TYPES = {"File", "Directory", "Function", "Class"}
+_UPDATE_ACTIONS = {"upsert", "delete"}
+
+# Required fields per (action, node_type) pair.
+_REQUIRED_FIELDS: dict[tuple[str, str], list[str]] = {
+    ("upsert", "File"): ["path"],
+    ("upsert", "Directory"): ["path"],
+    ("upsert", "Function"): ["file_path", "function_name"],
+    ("upsert", "Class"): ["file_path", "class_name"],
+    ("delete", "File"): ["path"],
+    ("delete", "Directory"): ["path"],
+    ("delete", "Function"): ["file_path", "function_name"],
+    ("delete", "Class"): ["file_path", "class_name"],
+}
+
+
+@mcp.tool(
+    annotations={
+        "title": "Update codebase graph nodes",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    }
+)
+async def brocode_update_graph(
     codebase_name: str,
-    is_directory: bool,
-) -> str:
-    """Re-index the released subtree (called via asyncio.to_thread).
+    changes: list[dict],
+    ctx: Context = None,
+) -> dict:
+    """Apply per-node graph updates (upsert or delete) directly to Neo4j.
 
-    Scopes the reindex to just the released node's subtree:
-    - Directory release: indexes that directory
-    - File release: indexes the file's parent directory
+    Use this to keep the knowledge graph in sync after editing files.
+    Each change dict specifies an action and a node type with its fields.
 
-    The codebase name is preserved so nodes keep the correct ``codebase``
-    property and edges reconnect to the existing graph via MERGE.
+    Partial success model — if one change fails, the rest still apply.
 
-    Imports repo_graph inline so the MCP server only needs it installed
-    at reindex time, not at startup.
+    Args:
+        codebase_name: Name of the codebase to update.
+        changes: List of change dicts, each with:
+            - action: "upsert" or "delete"
+            - node_type: "File", "Directory", "Function", or "Class"
+            - For File/Directory: "path" (required), optionally "name",
+              "extension", "size_bytes", "depth", "parent_path"
+            - For Function: "file_path" + "function_name" (required),
+              optionally "line_number", "is_method", "parameters", "owner_class"
+            - For Class: "file_path" + "class_name" (required),
+              optionally "line_number", "base_classes"
+
+    Returns:
+        A dict with "status" ("ok", "partial", "error"),
+        "applied" count, and "errors" list.
     """
-    import os
-    from pathlib import Path
+    # Top-level validation
+    if not codebase_name or not codebase_name.strip():
+        return {"status": "error", "message": "codebase_name is required."}
+    if not changes:
+        return {"status": "error", "message": "changes list is required and cannot be empty."}
 
-    from repo_graph.indexer.filesystem import index_repository
-    from repo_graph.storage.neo4j_store import Neo4jStore
+    db: Neo4jClient = _get_db(ctx)
+    applied = 0
+    errors: list[str] = []
 
-    repo_root = Path(root_path)
-    if not repo_root.is_dir():
-        raise FileNotFoundError(f"Repo root '{root_path}' is not a directory")
+    for i, change in enumerate(changes):
+        try:
+            _apply_single_change(change, i)  # validate
+            await _dispatch_change(db, codebase_name, change)
+            applied += 1
+        except ValueError as exc:
+            errors.append(str(exc))
+        except Exception as exc:
+            errors.append(f"Change {i}: {exc}")
 
-    # Determine the subtree to reindex
-    if is_directory:
-        subtree = repo_root / node_path
+    if not errors:
+        status = "ok"
+    elif applied > 0:
+        status = "partial"
     else:
-        # For a file, reindex its parent directory
-        subtree = repo_root / Path(node_path).parent
-        # If the file was at the repo root (no parent), reindex the repo root
-        if subtree == repo_root / ".":
-            subtree = repo_root
+        status = "error"
 
-    if not subtree.is_dir():
-        # Subtree was deleted from filesystem — nothing to reindex
-        return f"Subtree '{node_path}' no longer exists on disk, skipped reindex"
+    return {"status": status, "applied": applied, "errors": errors}
 
-    result = index_repository(subtree, analyze_python=True)
 
-    # Override the codebase name so nodes merge into the existing graph
-    # (index_repository would set it to subtree.name, e.g. "app" instead
-    # of "demo-api").
-    result.codebase.name = codebase_name
-    result.codebase.root_path = root_path
-    for d in result.directories:
-        d.path = str(Path(node_path if is_directory else str(Path(node_path).parent)) / d.path)
-    for f in result.files:
-        f.path = str(Path(node_path if is_directory else str(Path(node_path).parent)) / f.path)
-    for e in result.edges:
-        # Fix edge source/target paths — skip the codebase root reference
-        if e.source_path == subtree.name:
-            e.source_path = codebase_name
-        else:
-            prefix = node_path if is_directory else str(Path(node_path).parent)
-            if prefix and prefix != ".":
-                e.source_path = str(Path(prefix) / e.source_path)
-        # Target paths
-        if e.target_path != codebase_name:
-            prefix = node_path if is_directory else str(Path(node_path).parent)
-            if prefix and prefix != ".":
-                e.target_path = str(Path(prefix) / e.target_path)
+def _apply_single_change(change: dict, index: int) -> None:
+    """Validate a single change dict. Raises ValueError on problems."""
+    action = change.get("action")
+    if not action:
+        raise ValueError(f"Change {index}: missing required field 'action'.")
+    if action not in _UPDATE_ACTIONS:
+        raise ValueError(
+            f"Change {index}: invalid action '{action}'. "
+            f"Must be one of: {', '.join(sorted(_UPDATE_ACTIONS))}."
+        )
 
-    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-    user = os.environ.get("NEO4J_USERNAME", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD", "password")
-    database = os.environ.get("NEO4J_DATABASE", "neo4j")
+    node_type = change.get("node_type")
+    if not node_type:
+        raise ValueError(f"Change {index}: missing required field 'node_type'.")
+    if node_type not in _UPDATE_NODE_TYPES:
+        raise ValueError(
+            f"Change {index}: invalid node_type '{node_type}'. "
+            f"Must be one of: {', '.join(sorted(_UPDATE_NODE_TYPES))}."
+        )
 
-    with Neo4jStore(uri, user, password, database) as store:
-        store.save(result)
+    required = _REQUIRED_FIELDS.get((action, node_type), [])
+    for field in required:
+        if not change.get(field):
+            raise ValueError(
+                f"Change {index}: missing required field '{field}' "
+                f"for {action} {node_type}."
+            )
 
-    return (
-        f"Reindexed '{node_path}': "
-        f"{len(result.directories)} dirs, {len(result.files)} files, "
-        f"{len(result.functions)} functions, {len(result.classes)} classes"
-    )
+
+async def _dispatch_change(db: Neo4jClient, codebase: str, change: dict) -> None:
+    """Dispatch a validated change to the appropriate DB method."""
+    action = change["action"]
+    node_type = change["node_type"]
+
+    if action == "upsert":
+        if node_type == "File":
+            path = change["path"]
+            name = change.get("name") or os.path.basename(path)
+            extension = change.get("extension") or os.path.splitext(path)[1]
+            await db.upsert_file(
+                codebase=codebase,
+                path=path,
+                name=name,
+                extension=extension,
+                size_bytes=change.get("size_bytes", 0),
+                parent_path=change.get("parent_path", ""),
+            )
+        elif node_type == "Directory":
+            path = change["path"]
+            name = change.get("name") or os.path.basename(path)
+            await db.upsert_directory(
+                codebase=codebase,
+                path=path,
+                name=name,
+                depth=change.get("depth", 0),
+                parent_path=change.get("parent_path", ""),
+            )
+        elif node_type == "Function":
+            await db.upsert_function(
+                codebase=codebase,
+                file_path=change["file_path"],
+                name=change["function_name"],
+                line_number=change.get("line_number", 0),
+                is_method=change.get("is_method", False),
+                parameters=change.get("parameters", ""),
+                owner_class=change.get("owner_class", ""),
+            )
+        elif node_type == "Class":
+            await db.upsert_class(
+                codebase=codebase,
+                file_path=change["file_path"],
+                name=change["class_name"],
+                line_number=change.get("line_number", 0),
+                base_classes=change.get("base_classes", ""),
+            )
+
+    elif action == "delete":
+        if node_type == "File":
+            await db.delete_file(path=change["path"], codebase=codebase)
+        elif node_type == "Directory":
+            await db.delete_directory(path=change["path"], codebase=codebase)
+        elif node_type == "Function":
+            await db.delete_function(
+                file_path=change["file_path"],
+                name=change["function_name"],
+                codebase=codebase,
+            )
+        elif node_type == "Class":
+            await db.delete_class(
+                file_path=change["file_path"],
+                name=change["class_name"],
+                codebase=codebase,
+            )
 
 
 # ===================================================================
-# Tool 3: brocode_get_active_agents
+# Tool 4: brocode_get_active_agents
 # ===================================================================
 
 
@@ -619,11 +1000,11 @@ async def brocode_get_messages(
     agent_name: str,
     ctx: Context = None,
 ) -> dict:
-    """Retrieve and clear messages for an agent (inbox model).
+    """Retrieve messages for an agent.
 
     Call this periodically to check if other agents have sent you
     messages (e.g., requesting access to a node you've claimed).
-    Messages are cleared after reading.
+    Use brocode_clear_messages to delete messages after processing them.
 
     Args:
         agent_name: Your agent identifier.
@@ -645,15 +1026,48 @@ async def brocode_get_messages(
             # Tolerate malformed entries — include raw string as content
             messages.append({"from": "unknown", "content": raw, "node_path": "", "timestamp": ""})
 
-    # Clear inbox after reading (only if there were messages)
-    if messages:
-        await db.clear_messages(agent_name)
-
     return {
         "status": "ok",
         "messages": messages,
         "count": len(messages),
     }
+
+
+# ===================================================================
+# Tool 7: brocode_clear_messages
+# ===================================================================
+
+
+@mcp.tool(
+    annotations={
+        "title": "Clear messages for an agent",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    }
+)
+async def brocode_clear_messages(
+    agent_name: str,
+    ctx: Context = None,
+) -> dict:
+    """Clear all messages for an agent after reading them.
+
+    Call this after retrieving messages with brocode_get_messages
+    and processing them. Safe to call on an empty inbox.
+
+    Args:
+        agent_name: Your agent identifier.
+
+    Returns:
+        A dict with "status" ("ok").
+    """
+    db: Neo4jClient = _get_db(ctx)
+
+    await db.clear_messages(agent_name)
+
+    logger.info("Cleared messages for agent '%s'", agent_name)
+    return {"status": "ok", "message": f"Messages cleared for '{agent_name}'."}
 
 
 # ------------------------------------------------------------------
