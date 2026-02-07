@@ -51,12 +51,18 @@ Demo UI showing real-time agent activity on the codebase graph. Claimed nodes li
 - **Clients:** Claude Code, Gemini
 - **UI:** Streamlit
 
+## Skills Reference
+
+Agents should consult `Skills.md` for implementation patterns and best practices:
+- **Streamlit** - Graph visualization, real-time updates, Neo4j integration, demo controls
+
 ## Project Structure
 
 ```
 broCode/
 ├── CLAUDE.md          # This file
 ├── CURRENT_STATE.md   # Current status and active tasks
+├── Skills.md          # Implementation patterns for agents
 ├── project-skiss.md   # Original project specification
 ├── indexer/           # Automatic indexer (TODO)
 ├── mcp/               # MCP server implementation (TODO)
