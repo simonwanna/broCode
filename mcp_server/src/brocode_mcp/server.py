@@ -100,14 +100,13 @@ Follow this lifecycle every time you work on a codebase managed by broCode.
    are working where. This avoids conflicts before you even start.
 
 2. **Explore the graph** — Call `brocode_query_codebase` to find the node(s)
-   you need. Use `path_filter` globs and `node_type` to narrow results.
+   you need. Use `path_filter` globs and `node_type` to narrow results. Reason around claim status in close proximity to the nodes you want to edit. To make sure you don't accidently break something for the other agent
 
 3. **Claim before editing** — Call `brocode_claim_node` for every file you intend to modify. Handle responses:
    - `claimed` — you now own the node; proceed.
+   - `reason`-  when you claim write a clear reason for your claim, so other agents understand your intent and can decide whether to negotiate or pick a different file. Also ALWAYS include potential changes in output/input parameters so other agents can reason around it
    - `already_yours` — you already claimed it; proceed.
-   - `conflict` — another agent owns it. Use `brocode_send_message` to
-     negotiate, or pick a different file.
-
+   **CRITICAL** - `conflict` — another agent owns it. Use `brocode_send_message` to ask for access, telling them to send you a message using brocode_send_message when they are done. Then work on other files while you wait.
 
 4. **Do your work** — Edit files, run tests, etc.
 
@@ -127,6 +126,8 @@ Follow this lifecycle every time you work on a codebase managed by broCode.
 8. **Release when done** — Call `brocode_release_node` for each node you
    claimed. The Agent node is automatically deleted when its last claim is
    released.
+
+   **CRITICAL** If you have sent a message requesting access to another agent's node, claim the Codebase and release your other claims, so you don't block other agents. Wait until you get a response from the other agent before proceeding to claim their node.
 
 ## Key rules
 
