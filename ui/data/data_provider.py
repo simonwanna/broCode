@@ -221,6 +221,15 @@ class Neo4jDataProvider(DataProvider):
         # Also try cwd/.env
         _load_dotenv(Path.cwd() / ".env")
 
+        # Set SSL_CERT_FILE if not already set — needed for Neo4j Aura (neo4j+s://)
+        # The certifi bundle ships with the venv and resolves SSL verification errors.
+        if not os.environ.get("SSL_CERT_FILE"):
+            try:
+                import certifi
+                os.environ["SSL_CERT_FILE"] = certifi.where()
+            except ImportError:
+                pass  # certifi not installed; SSL may still work with system certs
+
         # Use provided values or fall back to environment
         self._uri = uri or os.environ.get("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.environ.get("NEO4J_USERNAME", "neo4j")
