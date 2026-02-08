@@ -39,6 +39,14 @@ def main():
         layout="wide",
     )
 
+    # Make graph fill full width
+    st.markdown("""
+        <style>
+        .stMainBlockContainer { max-width: 100%; padding-left: 1rem; padding-right: 1rem; }
+        iframe { width: 100% !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Auto-refresh for real-time updates
     st.sidebar.caption(f"Refresh interval: 8000ms")
     st_autorefresh(interval=8000, key="refresh_8s")
@@ -108,6 +116,30 @@ def main():
 
         # Render the graph
         render_graph(provider)
+
+        # Messages section
+        st.subheader("Agent Messages")
+        messages = provider.get_messages()
+
+        if messages:
+            for msg in messages:
+                # Color-code by message type
+                if msg.message_type == "request":
+                    icon = "📨"
+                elif msg.message_type == "release":
+                    icon = "✅"
+                else:
+                    icon = "💬"
+
+                node_info = f" (re: `{msg.node_id}`)" if msg.node_id else ""
+                timestamp = f" [{msg.timestamp}]" if msg.timestamp else ""
+
+                st.markdown(
+                    f"{icon} **{msg.from_agent}** → **{msg.to_agent}**{node_info}{timestamp}  \n"
+                    f"_{msg.content}_"
+                )
+        else:
+            st.caption("No messages")
 
     except Exception as e:
         st.error(f"Error loading data: {e}")

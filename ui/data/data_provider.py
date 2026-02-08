@@ -64,6 +64,22 @@ class Claim:
     timestamp: Optional[str] = None
 
 
+@dataclass
+class Message:
+    """
+    Represents a message between agents.
+
+    Messages are stored in the agent's inbox (Agent.messages property in Neo4j).
+    Used for coordination requests like "I need to edit this file you're claiming".
+    """
+    from_agent: str
+    to_agent: str
+    content: str
+    message_type: str = "request"  # "request", "release", "info"
+    timestamp: Optional[str] = None
+    node_id: Optional[str] = None  # Related node if applicable
+
+
 class DataProvider(ABC):
     """Abstract interface for data providers."""
 
@@ -100,6 +116,11 @@ class DataProvider(ABC):
     @abstractmethod
     def clear_agent_claims(self, agent_id: str) -> None:
         """Clear all claims for an agent."""
+        pass
+
+    @abstractmethod
+    def get_messages(self) -> list[Message]:
+        """Get all messages from agent inboxes."""
         pass
 
 
@@ -152,6 +173,11 @@ class MockDataProvider(DataProvider):
 
     def clear_agent_claims(self, agent_id: str) -> None:
         self._claims = [c for c in self._claims if c.agent_id != agent_id]
+
+    def get_messages(self) -> list[Message]:
+        """Mock provider returns messages from mock_data.json if present."""
+        messages_data = self._data.get("messages", [])
+        return [Message(**m) for m in messages_data]
 
 
 def _load_dotenv(env_path: Path) -> None:
@@ -472,6 +498,41 @@ class Neo4jDataProvider(DataProvider):
 
         with self._driver.session(database=self._database) as session:
             session.run(cypher, agent_name=agent_name)
+
+    def get_messages(self) -> list[Message]:
+        """
+        Get all messages from agent inboxes in Neo4j.
+
+        Messages are stored as JSON strings in the Agent.messages property.
+        """
+        cypher = """
+        MATCH (a:Agent)
+        WHERE a.messages IS NOT NULL AND size(a.messages) > 0
+        RETURN a.name AS agent_name, a.messages AS messages
+        """
+
+        all_messages = []
+        with self._driver.session(database=self._database) as session:
+            result = session.run(cypher)
+            for record in result:
+                agent_name = record["agent_name"]
+                messages_json = record["messages"] or []
+
+                for msg_str in messages_json:
+                    try:
+                        msg_data = json.loads(msg_str) if isinstance(msg_str, str) else msg_str
+                        all_messages.append(Message(
+                            from_agent=msg_data.get("from", "unknown"),
+                            to_agent=agent_name,
+                            content=msg_data.get("content", ""),
+                            message_type=msg_data.get("type", "info"),
+                            timestamp=msg_data.get("timestamp"),
+                            node_id=msg_data.get("node_id"),
+                        ))
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+
+        return all_messages
 
 
 def get_data_provider(use_mock: bool = True, **kwargs) -> DataProvider:

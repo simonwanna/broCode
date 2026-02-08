@@ -69,8 +69,8 @@ NODE_STYLES = {
 
 # Graph layout configuration
 GRAPH_CONFIG = {
-    "width": 1000,
-    "height": 700,
+    "width": 1400,
+    "height": 500,
     "directed": True,
     "hierarchical": True,
     "physics": {

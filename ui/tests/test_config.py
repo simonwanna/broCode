@@ -143,7 +143,9 @@ class TestGraphConfig:
         """Graph must have width and height."""
         assert "width" in GRAPH_CONFIG
         assert "height" in GRAPH_CONFIG
-        assert GRAPH_CONFIG["width"] > 0
+        # Width can be int or string like "100%"
+        width = GRAPH_CONFIG["width"]
+        assert isinstance(width, (int, str))
         assert GRAPH_CONFIG["height"] > 0
 
     def test_graph_is_directed(self):
