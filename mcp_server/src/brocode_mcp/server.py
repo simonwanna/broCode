@@ -102,21 +102,29 @@ Follow this lifecycle every time you work on a codebase managed by broCode.
 2. **Explore the graph** — Call `brocode_query_codebase` to find the node(s)
    you need. Use `path_filter` globs and `node_type` to narrow results.
 
-3. **Claim before editing** — Call `brocode_claim_node` for every file or
-   directory you intend to modify. Handle responses:
+3. **Claim before editing** — Call `brocode_claim_node` for every file you intend to modify. Handle responses:
    - `claimed` — you now own the node; proceed.
    - `already_yours` — you already claimed it; proceed.
    - `conflict` — another agent owns it. Use `brocode_send_message` to
      negotiate, or pick a different file.
 
+
 4. **Do your work** — Edit files, run tests, etc.
 
-5. **Update the graph** — If you created, renamed, or deleted files,
+5. **Repeat** If you want to edit more files and nodes, repeat steps 2-4.
+
+6. **Update the graph** — If you created, renamed, or deleted files,
    functions, or classes, call `brocode_update_graph` so the knowledge graph
    stays in sync. See the `brocode://update-graph-examples` resource for
-   concrete JSON payloads.
+   concrete JSON payloads. The graph should always reflect the current state
+   of the codebase.
 
-6. **Release when done** — Call `brocode_release_node` for each node you
+7. **Poll messages** — Call `brocode_get_messages` to see if another agent
+   has sent a feature request. Handle responses:
+   - `message` — another agent has requested access to a node you claimed.
+     Use `brocode_send_message` to respond when the node is available.
+
+8. **Release when done** — Call `brocode_release_node` for each node you
    claimed. The Agent node is automatically deleted when its last claim is
    released.
 
@@ -628,7 +636,10 @@ async def brocode_update_graph(
     if not codebase_name or not codebase_name.strip():
         return {"status": "error", "message": "codebase_name is required."}
     if not changes:
-        return {"status": "error", "message": "changes list is required and cannot be empty."}
+        return {
+            "status": "error",
+            "message": "changes list is required and cannot be empty.",
+        }
 
     db: Neo4jClient = _get_db(ctx)
     applied = 0
@@ -1024,7 +1035,9 @@ async def brocode_get_messages(
             messages.append(json.loads(raw))
         except (json.JSONDecodeError, TypeError):
             # Tolerate malformed entries — include raw string as content
-            messages.append({"from": "unknown", "content": raw, "node_path": "", "timestamp": ""})
+            messages.append(
+                {"from": "unknown", "content": raw, "node_path": "", "timestamp": ""}
+            )
 
     return {
         "status": "ok",
