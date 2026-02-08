@@ -27,7 +27,6 @@ from data.data_provider import get_data_provider, Neo4jDataProvider
 from components.graph import render_graph
 from components.sidebar import (
     render_agent_status,
-    render_demo_controls,
     render_legend,
 )
 
@@ -90,12 +89,6 @@ def main():
     render_legend(provider)
     render_agent_status(provider)
 
-    st.sidebar.divider()
-
-    # Demo controls
-    if render_demo_controls(provider):
-        st.rerun()
-
     # Main content - Graph visualization
     st.subheader("Codebase Graph")
 
@@ -142,7 +135,7 @@ def main():
         )
     else:
         st.caption(
-            "Use the demo controls in the sidebar to simulate agent behavior."
+            "Using mock data. Toggle 'Use Neo4j' for live data."
         )
 
 

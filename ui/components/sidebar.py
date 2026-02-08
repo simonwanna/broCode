@@ -7,7 +7,7 @@ to simulate agent behavior during presentations.
 
 import streamlit as st
 
-from config import AGENT_COLORS, get_claim_reason_description
+from config import AGENT_COLORS, UNKNOWN_AGENT_COLOR, get_claim_reason_description, _find_agent_colors
 from data.data_provider import DataProvider
 
 
@@ -26,8 +26,8 @@ def render_agent_status(provider: DataProvider) -> None:
 
     for agent in agents:
         agent_claims = [c for c in claims if c.agent_id == agent.id]
-        agent_colors = AGENT_COLORS.get(agent.id, {})
-        base_color = agent_colors.get("base", "#888888")
+        agent_colors = _find_agent_colors(agent.id)
+        base_color = agent_colors.get("base", UNKNOWN_AGENT_COLOR)
 
         # Agent header with color indicator
         st.sidebar.markdown(
@@ -135,17 +135,14 @@ def render_legend(provider: DataProvider) -> None:
     # Show only active agents, not all defined colors
     seen_names = set()
     for agent in agents:
-        agent_colors = AGENT_COLORS.get(agent.id, {})
-        if not agent_colors:
-            # Try without agent_ prefix
-            agent_colors = AGENT_COLORS.get(agent.id.replace("agent_", ""), {})
+        agent_colors = _find_agent_colors(agent.id)
 
         name = agent_colors.get("name", agent.name)
         if name in seen_names:
             continue
         seen_names.add(name)
 
-        base_color = agent_colors.get("base", "#888888")
+        base_color = agent_colors.get("base", UNKNOWN_AGENT_COLOR)
         st.sidebar.markdown(
             f"<span style='color: {base_color};'>●</span> {name}",
             unsafe_allow_html=True

@@ -33,6 +33,12 @@ AGENT_COLORS = {
         "exclusive": "#0000CD",
         "shared": "#87CEEB",
     },
+    "antigravity": {
+        "name": "Antigravity",
+        "base": "#4169E1",
+        "exclusive": "#0000CD",
+        "shared": "#87CEEB",
+    },
 }
 
 # Default color for unclaimed nodes
