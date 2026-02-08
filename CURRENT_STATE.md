@@ -7,23 +7,26 @@
 
 ## Active Tasks
 
-- [ ] Create descriptive prompts for detailed usage of tools
-- [ ] Create demo with specific use-case with a scenario (maybe on multiple computer)
-- [ ] Messaging in the UI
-- [ ] Implement `exclusive` vs `shared` claim types in MCP server (claim type parameter not yet in code)
-- [ ] Update UI to show claim types with different visual indicators
+- [x] Create descriptive prompts for detailed usage of tools
+- [ ] Create demo with specific use-case with a scenario (maybe on multiple computers)
+- [x] Implement `exclusive` vs `shared` claim types in MCP server (claim type parameter not yet in code)
 - [ ] Fix MCP server tests when run from repo root (`uv run pytest mcp_server/tests/` fails with import error — must run from `mcp_server/` dir)
+- [ ] Make graph dimensions responsive (currently fixed pixels — won't adapt to projector/different screens)
 
 ## Completed
 
 - [x] Implement Automatic Indexer (Neo4j) — filesystem walking, Python AST analysis, .indexignore
 - [x] Implement MCP Server — 8 tools, 4 resources, async Neo4j, stdio transport
-- [x] Create Streamlit Visualization — graph, sidebar, demo controls
+- [x] Create Streamlit Visualization — graph, sidebar, legend
 - [x] Connect UI to Neo4j (with toggle for mock/live data)
 - [x] Free-text claim reasons (required `claim_reason` parameter)
 - [x] Agent messaging tools (`brocode_send_message`, `brocode_get_messages`, `brocode_clear_messages`)
 - [x] Graph update tool (`brocode_update_graph`) for keeping knowledge graph in sync after edits
 - [x] MCP resources: agent-workflow, graph-schema, update-graph-examples, messaging protocol
+- [x] UI: Messages panel showing agent inbox messages below the graph
+- [x] UI: Unknown agent fallback color (white) for agents not in config
+- [x] UI: Smart refresh (polls every 8s, change detection)
+- [x] UI: Fuzzy agent color matching (handles session suffixes like "claude-session-1")
 
 ## MCP Server Tools (8 tools)
 
@@ -56,7 +59,7 @@
 
 - **Automatic Indexer**: Filesystem walking, Python AST analysis, .indexignore support, Neo4j persistence. Located in `repo-graph/`.
 - **MCP Server**: FastMCP server with 8 tools + 4 resources. Async Neo4j driver, stdio transport, lifespan-managed connection. Located in `mcp_server/`. 74 tests.
-- **UI**: Streamlit visualization with Neo4j integration. Toggle between mock/live data. 39 tests. Located in `ui/`.
+- **UI**: Streamlit visualization with Neo4j integration. Toggle between mock/live data. Messages panel, agent legend, fuzzy color matching. 39 tests. Located in `ui/`. **Known limitation**: Graph dimensions are fixed pixels (1400x500) — not responsive to screen size.
 
 ## Recent Blockers
 
@@ -70,6 +73,8 @@
 - Claim reasons are free-text descriptions of planned work (required, cannot be empty)
 - Agent messaging uses an inbox model: send → get → clear
 - Agent nodes auto-delete when their last claim is released
+- Agent colors: Claude=orange, Gemini/Antigravity=blue, unknown=white
+- UI colors are defined in `ui/config.py` — add new agents there
 - Please update this file when:
   - A major component is completed
   - A new blocker is identified
