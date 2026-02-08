@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import (
     AGENT_COLORS,
     UNCLAIMED_COLOR,
+    UNKNOWN_AGENT_COLOR,
     NODE_STYLES,
     GRAPH_CONFIG,
     get_node_color,
@@ -82,11 +83,11 @@ class TestGetNodeColor:
             color = get_node_color("file_main", claims, AGENT_COLORS)
             assert color == AGENT_COLORS["agent_gemini"]["base"]
 
-    def test_unknown_agent_returns_unclaimed_color(self):
-        """Claims from unknown agents should fall back to unclaimed color."""
+    def test_unknown_agent_returns_unknown_agent_color(self):
+        """Claims from unknown agents should fall back to white (unknown agent color)."""
         claims = [Claim(agent_id="agent_unknown", node_id="file_main", claim_reason="Working on it")]
         color = get_node_color("file_main", claims, AGENT_COLORS)
-        assert color == UNCLAIMED_COLOR
+        assert color == UNKNOWN_AGENT_COLOR
 
     def test_unrelated_claims_dont_affect_node(self):
         """Claims on other nodes should not affect this node's color."""

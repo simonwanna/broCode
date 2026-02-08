@@ -41,7 +41,8 @@ def main():
     )
 
     # Auto-refresh for real-time updates
-    st_autorefresh(interval=REFRESH_INTERVAL_MS, key="graph_refresh")
+    st.sidebar.caption(f"Refresh interval: 8000ms")
+    st_autorefresh(interval=8000, key="refresh_8s")
 
     # Data source toggle in sidebar
     st.sidebar.header("Data Source")

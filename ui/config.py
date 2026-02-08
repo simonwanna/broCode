@@ -38,6 +38,9 @@ AGENT_COLORS = {
 # Default color for unclaimed nodes
 UNCLAIMED_COLOR = "#97C2FC"  # Light blue-gray
 
+# Fallback color for nodes claimed by unknown agents
+UNKNOWN_AGENT_COLOR = "#FFFFFF"  # White
+
 # Node type styling
 NODE_STYLES = {
     "Directory": {
@@ -135,7 +138,8 @@ def get_node_color(node_id: str, claims: list, agents: dict) -> str:
     claim = node_claims[0]
     agent_colors = _find_agent_colors(claim.agent_id)
 
-    return agent_colors.get("base", UNCLAIMED_COLOR)
+    # Use white for unknown agents so claimed nodes are still visible
+    return agent_colors.get("base", UNKNOWN_AGENT_COLOR)
 
 
 def get_claim_reason_description(reason: str) -> str:
